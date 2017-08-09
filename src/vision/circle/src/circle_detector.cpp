@@ -62,7 +62,7 @@ bool CircleDetector::imgThreshold() {
 
 
 bool CircleDetector::imgDilate() {
-    cv::dilate(m_thresholdimg, m_dilateimg, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)), cv::Point(-1, -1), 1);
+    cv::dilate(m_thresholdimg, m_dilateimg, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7)), cv::Point(-1, -1), 1);
     return true;
 }
 
