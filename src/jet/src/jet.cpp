@@ -447,7 +447,7 @@ bool Jet::pid_control(uint8_t ground, float x, float y, float z, float yaw)
     for (int i = 0; i < 4; i++)
     {
         //std::cout << std::fixed << std::setprecision(3) << ref[i] << "\t";
-        printf("%.3f", ref[i]);
+        printf("%.3f\t", ref[i]);
     }
 
     std::cout << std::endl;
@@ -455,7 +455,7 @@ bool Jet::pid_control(uint8_t ground, float x, float y, float z, float yaw)
     for (int i = 0; i < 4; i++)
     {
         //std::cout << std::fixed << std::setprecision(3) << fdb[i] << "\t";
-        printf("%.3f", fdb[i]);
+        printf("%.3f\t", fdb[i]);
     }
 
     std::cout << std::endl;
@@ -463,7 +463,7 @@ bool Jet::pid_control(uint8_t ground, float x, float y, float z, float yaw)
     for (int i = 0; i < 4; i++)
     {
         //std::cout << std::fixed << std::setprecision(3) << out[i] << "\t";
-        printf("%.3f", out[i]);
+        printf("%.3f\t", out[i]);
     }
 
     std::cout << std::endl;
