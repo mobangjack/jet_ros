@@ -186,10 +186,10 @@ int my_callback(int data_type, int data_len, char *content)
   
 		//since all odometry is 6DOF we'll need a quaternion created from yaw
 		geometry_msgs::Quaternion odom_quat;
-		odom_quat.x = g_motion->q0;
-		odom_quat.y = g_motion->q1;
-		odom_quat.z = g_motion->q2;
-		odom_quat.w = g_motion->q3;
+		odom_quat.x = g_motion->q1;
+		odom_quat.y = g_motion->q2;
+		odom_quat.z = g_motion->q3;
+		odom_quat.w = g_motion->q0;
 
 		//first, we'll publish the transform over tf
 		geometry_msgs::TransformStamped odom_trans;

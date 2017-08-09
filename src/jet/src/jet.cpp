@@ -211,12 +211,14 @@ void Jet::pub_jet_state()
 
 void Jet::tf(const float* local, float* global)
 {
-    global[0] = local[0] * cos(jet_pos_calied[3]) -
-                local[1] * sin(jet_pos_calied[3]) + 
-                jet_pos_calied[0];
-    global[1] = -local[0] * sin(jet_pos_calied[3]) +
-                local[1] * cos(jet_pos_calied[3]) + 
-                jet_pos_calied[1];
+    double alpha = atan(local[0] / local[1]);
+    double beta = alpha - jet_pos_calied[3];
+    double r = sqrt(local[0] * local[0] + local[1] * local[1]);
+    double x = r * sin(beta);
+    double y = r * cos(beta);
+
+    global[0] = x + jet_pos_calied[0];
+    global[1] = y + jet_pos_calied[1];
     global[2] = jet_pos_calied[2] - local[2];
     global[3] = jet_pos_calied[3] + local[3];
     for (int i = 0; i < 4; i++)
@@ -587,23 +589,23 @@ bool Jet::doFlyToCar()
 
 bool Jet::doFindCar()
 {
-    //return vision_target_pos_confirmed;
-    return true;
+    return vision_target_pos_confirmed;
+    //return true;
 }
 
 bool Jet::doServeCar()
 {
-    /*
     float ex = vision_target_global_pos_est[0] - jet_pos_calied[0];
     float ey = vision_target_global_pos_est[1] - jet_pos_calied[1];
     float ez = dropoint.z - jet_pos_calied[2];
     float eyaw = 0;
-    */
 
+    /*
     float ex = dropoint.x - jet_pos_calied[0];
     float ey = dropoint.y - jet_pos_calied[1];
     float ez = dropoint.z - jet_pos_calied[2];
     float eyaw = 0;
+    */
 
     return pid_control(1, ex, ey, ez, eyaw);
 }

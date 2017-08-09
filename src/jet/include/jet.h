@@ -160,6 +160,8 @@ protected:
     float vision_target_local_pos_raw[4];
     float vision_target_global_pos_raw[4];
 
+    float vision_target_global_distance[4];
+
     int vision_target_pos_filter_window_size;
     double vision_target_pos_filter_variance_limit;
     std::vector<float> vision_target_local_pos_vec[4]; // X,Y,Z,YAW
