@@ -42,7 +42,7 @@ bool CircleDetector::imgThreshold() {
                     m_thresholdimg.at<unsigned char>(i, j) = 255;
                 }
                 */
-                if(m_originalimg.at<cv::Vec3b>(i, j)[2] - m_originalimg.at<cv::Vec3b>(i, j)[1] > 50) m_thresholdimg.at<unsigned char>(i, j) = 255;
+                if(m_originalimg.at<cv::Vec3b>(i, j)[2] - m_originalimg.at<cv::Vec3b>(i, j)[1] > 40) m_thresholdimg.at<unsigned char>(i, j) = 255;
             
             }    
             else if(m_parkcolor==1) {
@@ -51,7 +51,7 @@ bool CircleDetector::imgThreshold() {
                     m_thresholdimg.at<unsigned char>(i, j) = 255;  
                 }      
                 */
-                if(m_originalimg.at<cv::Vec3b>(i, j)[0] - m_originalimg.at<cv::Vec3b>(i, j)[2] > 50) m_thresholdimg.at<unsigned char>(i, j) = 255;
+                if(m_originalimg.at<cv::Vec3b>(i, j)[0] - m_originalimg.at<cv::Vec3b>(i, j)[2] > 40) m_thresholdimg.at<unsigned char>(i, j) = 255;
             }    
             else std::cout << "parkcolor error" << std::endl; 
         }
