@@ -741,11 +741,9 @@ bool Jet::action(uint8_t cmd)
 
 void Jet::vision_cali()
 {
-    float bias[4];
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 3; i++)
     {
-        bias[i] = jet_pos_calied[i] - vision_target_global_pos_est[i];
-        jet_pos_bias[i] += bias[i];
+        jet_pos_bias[i] += jet_pos_calied[i] - vision_target_global_pos_est[i];
     }
 }
 
