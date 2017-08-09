@@ -587,13 +587,21 @@ bool Jet::doFlyToCar()
 
 bool Jet::doFindCar()
 {
-    return vision_target_pos_confirmed;
+    //return vision_target_pos_confirmed;
+    return true;
 }
 
 bool Jet::doServeCar()
 {
+    /*
     float ex = vision_target_global_pos_est[0] - jet_pos_calied[0];
     float ey = vision_target_global_pos_est[1] - jet_pos_calied[1];
+    float ez = dropoint.z - jet_pos_calied[2];
+    float eyaw = 0;
+    */
+
+    float ex = dropoint.x - jet_pos_calied[0];
+    float ey = dropoint.y - jet_pos_calied[1];
     float ez = dropoint.z - jet_pos_calied[2];
     float eyaw = 0;
 
