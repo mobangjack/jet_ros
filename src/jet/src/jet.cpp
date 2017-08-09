@@ -219,6 +219,10 @@ void Jet::tf(const float* local, float* global)
                 jet_pos_calied[1];
     global[2] = jet_pos_calied[2] - local[2];
     global[3] = jet_pos_calied[3] + local[3];
+    for (int i = 0; i < 4; i++)
+    {
+        std::cout << "vision target in global[" << i << "]: " << global[i] << std::endl;
+    }
 }
 
 void Jet::vision_callback(const geometry_msgs::PoseStamped& pose_stamped)
