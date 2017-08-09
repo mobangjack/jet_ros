@@ -173,10 +173,11 @@ void Jet::odometry_callback(const nav_msgs::OdometryConstPtr& odometry)
 
     if (calied == false)
     {
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 3; i++)
         {
             jet_pos_bias[i] = jet_pos_raw[i];
         }
+        jet_pos_bias[3] = 0; // treat global yaw tenderly
         calied = true;
     }
     calc_jet_pos_calied();
