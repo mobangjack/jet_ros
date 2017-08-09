@@ -1,0 +1,29 @@
+<launch>
+
+  <node pkg="vision" type="vision" name="vision" output="screen">
+
+    <param name="show_image" type="bool" value="true" />
+    <param name="detect_tag_only" type="bool" value="false" />
+
+    <param name="vid" type="int" value="0" />
+
+    <param name="fx" type="double" value="488.5" />
+    <param name="fy" type="double" value="489.1" />
+    <param name="px" type="double" value="305.1" />
+    <param name="py" type="double" value="269.8" />
+
+    <param name="image_width" type="double" value="640" />
+    <param name="image_height" type="double" value="480" />
+    <param name="circle_radius" type="double" value="0.26" />
+    
+    <param name="camera_x_offset" type="double" value="0.175" />
+    <param name="camera_y_offset" type="double" value="0" />
+    <param name="camera_z_offset" type="double" value="0" />
+    
+    <param name="jet_state_detect_apriltag" type="int" value="6" />
+    <param name="jet_state_detect_circle" type="int" value="11" />
+
+    <param name="tag_code" type="string" value="16h5" />
+    <param name="tag_size" type="double" value="0.163513" />
+  </node>
+</launch>
