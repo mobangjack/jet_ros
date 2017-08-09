@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
       cout << "Invalid tag family specified, use default 16h5" << endl;
     }
 
-    CircleDetector circle_detector(RED_CIRCLE);  //1: blue, 2: red=
+    CircleDetector circle_detector(BLUE_CIRCLE);  //1: blue, 2: red=
     AprilTags::TagDetector tag_detector(m_tagCodes);
 
     ros::NodeHandle nh;
