@@ -13,7 +13,7 @@
 	<param name="serial_port"         type="string" value="/dev/ttyTHS2"/>  
   	<param name="serial_baudrate"     type="int"    value="115200"/>
 
-	<param name="vision_target_pos_filter_window_size"   type="int"    value="3"/>
+	<param name="vision_target_pos_filter_window_size"   type="int"    value="1"/>
 	<param name="vision_target_pos_filter_variance_limit"   type="double"    value="1e-4"/>
 
 	<param name="use_guidance"        type="bool"   value="true" />

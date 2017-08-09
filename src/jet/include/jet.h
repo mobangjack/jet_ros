@@ -32,6 +32,8 @@
 #include <iostream> 
 #include <iomanip>  
 
+#include <math.h>
+
 #include "pid.h"
 #include "uart.h"
 #include "crc8.h"
@@ -184,6 +186,7 @@ protected:
 
 public:
     uint8_t status();
+    void tf(const float* local, float* global);
     bool doStandby();
     bool doGrabBullets();
     bool doRequestControl();

@@ -209,6 +209,18 @@ void Jet::pub_jet_state()
     jet_state_pub.publish(msg);
 }
 
+void Jet::tf(const float* local, float* global)
+{
+    global[0] = local[0] * cos(jet_pos_calied[3]) -
+                local[1] * sin(jet_pos_calied[3]) + 
+                jet_pos_calied[0];
+    global[1] = -local[0] * sin(jet_pos_calied[3]) +
+                local[1] * cos(jet_pos_calied[3]) + 
+                jet_pos_calied[1];
+    global[2] = jet_pos_calied[2] - local[2];
+    global[3] = jet_pos_calied[3] + local[3];
+}
+
 void Jet::vision_callback(const geometry_msgs::PoseStamped& pose_stamped)
 {
     vision_target_local_pos_raw[0] = pose_stamped.pose.position.x;
@@ -217,10 +229,7 @@ void Jet::vision_callback(const geometry_msgs::PoseStamped& pose_stamped)
     vision_target_local_pos_raw[3] = tf::getYaw(pose_stamped.pose.orientation);
 
     // tf
-    for (int i = 0; i < 4; i++)
-    {
-        vision_target_global_pos_raw[i] = vision_target_local_pos_raw[i] + jet_pos_calied[i];
-    }
+    tf(vision_target_local_pos_raw, vision_target_global_pos_raw);
 
     if (vision_callback_timer.timeout())
     {
@@ -247,9 +256,9 @@ void Jet::vision_callback(const geometry_msgs::PoseStamped& pose_stamped)
                     sum[i] += vision_target_local_pos_vec[i][j];
                 }
                 vision_target_local_pos_est[i] = sum[i] / vision_target_pos_filter_window_size;
-                vision_target_global_pos_est[i] = vision_target_local_pos_est[i] + jet_pos_calied[i];
                 std::cout << "vision_target_local_pos_est[" << i << "]: " << vision_target_local_pos_est[i] << std::endl;
             }
+            tf(vision_target_local_pos_est, vision_target_global_pos_est);
             for (int i = 0; i < 4; i++)
             {
                 for (int j = 0; j < vision_target_pos_filter_window_size; j++)
