@@ -243,8 +243,8 @@ void Jet::vision_callback(const geometry_msgs::PoseStamped& pose_stamped)
         for (int i = 0; i < 4; i++)
         {
             vision_target_local_pos_vec[i].clear();
-            vision_target_pos_confirmed = false;
         }
+        vision_target_pos_confirmed = false;
     }
     else
     {
@@ -278,15 +278,16 @@ void Jet::vision_callback(const geometry_msgs::PoseStamped& pose_stamped)
                 std::cout << "vision_target_local_pos_var[" << i << "]: " << var[i] << std::endl;
                 vision_target_local_pos_vec[i].clear(); // clear
             }
+            bool tmp_flag = true;
             for (int i = 0; i < 4; i++)
             {
                 if (var[i] > vision_target_pos_filter_variance_limit)
                 {
-                    vision_target_pos_confirmed = false;
+                    tmp_flag = false;
                     break;
                 }
-                vision_target_pos_confirmed = true;
             }
+            vision_target_pos_confirmed = tmp_flag;
         }
         else
         {
