@@ -42,6 +42,7 @@ catkin_package(
     DEPENDS OpenMP
 )
 
+FILE(GLOB_RECURSE apriltags_src "apriltags/src/*.cc")
 add_library(apriltags
   apriltags/src/Edge.cc 
   apriltags/src/FloatImage.cc 
@@ -60,6 +61,16 @@ add_library(apriltags
 )
 
 target_link_libraries(apriltags
+  ${Eigen_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+
+FILE(GLOB_RECURSE aruco_src "aruco/src/*.cpp")
+add_library(aruco
+    ${aruco_src}
+)
+target_link_libraries(aruco
   ${Eigen_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${catkin_LIBRARIES}

@@ -28,12 +28,6 @@ freestyle(false), odom_callback_timer(60), vision_callback_timer(500)
     np.param<int>("serial_baudrate", serial_baudrate, 115200);
     np.param<bool>("use_guidance", use_guidance, false);
 
-    np.param<int>("vision_target_pos_filter_window_size", vision_target_pos_filter_window_size, 5);
-    np.param<double>("vision_target_pos_filter_variance_limit", vision_target_pos_filter_variance_limit, 1e-5);
-
-    std::cout << "vision_target_pos_filter_window_size: " << vision_target_pos_filter_window_size << std::endl;
-    std::cout << "vision_target_pos_filter_variance_limit: " << vision_target_pos_filter_variance_limit << std::endl;
-
     int ret = uart_open(&uart_fd, serial_port.c_str(), serial_baudrate, UART_OFLAG_WR);
     if (ret < 0) {
         fprintf(stderr, "Error, cannot bind to the specified serial port %s.\n"
@@ -159,8 +153,6 @@ void Jet::load_timeout_param(ros::NodeHandle& nh)
 
 void Jet::odometry_callback(const nav_msgs::OdometryConstPtr& odometry)
 {
-    odom_callback_timer.reset(odom_callback_timeout);
-
     jet_pos_raw[0] = odometry->pose.pose.position.x;
     jet_pos_raw[1] = odometry->pose.pose.position.y;
     jet_pos_raw[2] = odometry->pose.pose.position.z;
@@ -177,11 +169,14 @@ void Jet::odometry_callback(const nav_msgs::OdometryConstPtr& odometry)
         {
             jet_pos_bias[i] = jet_pos_raw[i];
         }
-        jet_pos_bias[3] = 0; // treat global yaw tenderly
+        jet_pos_bias[3] = 0; // yaw bias should be zero to infer the direction of jet
         calied = true;
     }
+
     calc_jet_pos_calied();
     pub_pose_calied();
+
+    odom_callback_timer.reset(odom_callback_timeout);
 }
 
 void Jet::calc_jet_pos_calied()
@@ -224,76 +219,19 @@ void Jet::tf(const float* local, float* global)
     global[3] = jet_pos_calied[3] + local[3];
     for (int i = 0; i < 4; i++)
     {
-        std::cout << "vision target in global[" << i << "]: " << global[i] << std::endl;
+        std::cout << "tf: global[" << i << "]: " << global[i] << std::endl;
     }
 }
 
 void Jet::vision_callback(const geometry_msgs::PoseStamped& pose_stamped)
 {
-    vision_target_local_pos_raw[0] = pose_stamped.pose.position.x;
-    vision_target_local_pos_raw[1] = pose_stamped.pose.position.y;
-    vision_target_local_pos_raw[2] = pose_stamped.pose.position.z;
-    vision_target_local_pos_raw[3] = tf::getYaw(pose_stamped.pose.orientation);
+    vision_target_local_pos[0] = pose_stamped.pose.position.x;
+    vision_target_local_pos[1] = pose_stamped.pose.position.y;
+    vision_target_local_pos[2] = pose_stamped.pose.position.z;
+    vision_target_local_pos[3] = tf::getYaw(pose_stamped.pose.orientation);
 
     // tf
-    tf(vision_target_local_pos_raw, vision_target_global_pos_raw);
-
-    if (vision_callback_timer.timeout())
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            vision_target_local_pos_vec[i].clear();
-        }
-        vision_target_pos_confirmed = false;
-    }
-    else
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            vision_target_local_pos_vec[i].push_back(vision_target_local_pos_raw[i]);
-        }
-        if (vision_target_local_pos_vec[0].size() >= vision_target_pos_filter_window_size)
-        {
-            double sum[4] = { 0, 0, 0, 0 };
-            double var[4] = { 0, 0, 0, 0 };
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < vision_target_pos_filter_window_size; j++)
-                {
-                    sum[i] += vision_target_local_pos_vec[i][j];
-                }
-                vision_target_local_pos_est[i] = sum[i] / vision_target_pos_filter_window_size;
-                std::cout << "vision_target_local_pos_est[" << i << "]: " << vision_target_local_pos_est[i] << std::endl;
-            }
-            tf(vision_target_local_pos_est, vision_target_global_pos_est);
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < vision_target_pos_filter_window_size; j++)
-                {
-                    double res = vision_target_local_pos_vec[i][j] - vision_target_local_pos_est[i];
-                    #define SQR(x) (x*x)
-                    var[i] += SQR(res);
-                }
-                var[i] = var[i] / vision_target_pos_filter_window_size;
-                std::cout << "vision_target_local_pos_var[" << i << "]: " << var[i] << std::endl;
-                vision_target_local_pos_vec[i].clear(); // clear
-            }
-            bool tmp_flag = true;
-            for (int i = 0; i < 4; i++)
-            {
-                if (var[i] > vision_target_pos_filter_variance_limit)
-                {
-                    tmp_flag = false;
-                    break;
-                }
-            }
-            vision_target_pos_confirmed = tmp_flag;
-        }
-        else
-        {
-            vision_target_pos_confirmed = false;
-        }
-    }
+    tf(vision_target_local_pos, vision_target_global_pos);
 
     vision_callback_timer.reset(vision_callback_timeout);
 }
@@ -303,7 +241,7 @@ bool Jet::charge_callback(jet::Charge::Request& request, jet::Charge::Response& 
     response.result = status();
     if (jet_state == STAND_BY) // Accept request ONLY when jet is standing by 
     {
-        jet_state = GRAB_BULLETS;
+        freestyle = true;
     }
     return true;
 }
@@ -377,7 +315,6 @@ uint8_t Jet::stat_grabber()
     {
         return 0xff;
     }
-
     uint8_t buf[4];
     memset(buf, 0, 4);
     read(uart_fd, buf, 4);
@@ -428,8 +365,8 @@ bool Jet::pid_control(uint8_t ground, float x, float y, float z, float yaw)
         return false;
     }
 
-    float fdb[4];
     float ref[4];
+    float fdb[4];
     float out[4];
 
     if (ground)
@@ -591,25 +528,23 @@ bool Jet::doFlyToCar()
 
 bool Jet::doFindCar()
 {
-    return vision_target_pos_confirmed;
-    //return true;
+    return (!vision_callback_timer.timeout());
 }
 
 bool Jet::doServeCar()
 {
-    float ex = vision_target_global_pos_est[0] - jet_pos_calied[0];
-    float ey = vision_target_global_pos_est[1] - jet_pos_calied[1];
-    float ez = dropoint.z - jet_pos_calied[2];
+    if (vision_callback_timer.timeout())
+    {
+        std::cout << "WARNING@Jet::doServeCar(): vision callback timeout, stop control" << std::endl;
+        return false;
+    }
+
+    float ex = vision_target_local_pos[0];
+    float ey = vision_target_local_pos[1];
+    float ez = dropoint.z - vision_target_local_pos[2];
     float eyaw = 0;
 
-    /*
-    float ex = dropoint.x - jet_pos_calied[0];
-    float ey = dropoint.y - jet_pos_calied[1];
-    float ez = dropoint.z - jet_pos_calied[2];
-    float eyaw = 0;
-    */
-
-    return pid_control(1, ex, ey, ez, eyaw);
+    return pid_control(0, ex, ey, ez, eyaw); // body
 }
 
 bool Jet::doDropBullets()
@@ -639,17 +574,23 @@ bool Jet::doFlyBack()
 
 bool Jet::doFindPark()
 {
-    return vision_target_pos_confirmed;
+    return (!vision_callback_timer.timeout());
 }
 
 bool Jet::doVisualServoLanding()
 {
-    float ex = vision_target_global_pos_est[0] - jet_pos_calied[0];
-    float ey = vision_target_global_pos_est[1] - jet_pos_calied[1];
-    float ez = landing_height - jet_pos_calied[2];
+    if (vision_callback_timer.timeout())
+    {
+        std::cout << "WARNING@Jet::doVisualServoLanding(): vision callback timeout, stop control" << std::endl;
+        return false;
+    }
+
+    float ex = vision_target_local_pos[0];
+    float ey = vision_target_local_pos[1];
+    float ez = landing_height - vision_target_local_pos[2];
     float eyaw = 0;
 
-    return pid_control(1, ex, ey, ez, eyaw);
+    return pid_control(0, ex, ey, ez, eyaw); // body frame
 }
 
 bool Jet::doLanding()
@@ -740,19 +681,10 @@ bool Jet::action(uint8_t cmd)
     }
 }
 
-void Jet::vision_cali()
-{
-    for (int i = 0; i < 3; i++)
-    {
-        jet_pos_bias[i] += jet_pos_calied[i] - vision_target_global_pos_est[i];
-    }
-}
-
 void Jet::stateMachine()
 {
     static bool success = false;
     static uint32_t tick = 0;
-    static bool need_cali = false;
     switch (jet_state)
     {
         case STAND_BY:
@@ -879,18 +811,10 @@ void Jet::stateMachine()
         if (!success)
         {
             success = doFindCar();
-            // need_cali = success;
             std::cout << "stateMachine: " << "Find Car" << std::endl;
         }
         else if (tick < duration[FIND_CAR])
         {
-            // calibrate odom if needed
-            if (need_cali)
-            {
-                vision_cali();
-                need_cali = false;
-            }
-
             tick++;
             std::cout << "stateMachine: " << "Find Car@Tick: " << tick << std::endl;
         }
@@ -987,17 +911,10 @@ void Jet::stateMachine()
         if (!success)
         {
             success = doFindPark();
-            // need_cali = success;
             std::cout << "stateMachine: " << "Find Park" << std::endl;
         }
         else if (tick < duration[FIND_PARK])
         {
-            if (need_cali)
-            {
-                vision_cali();
-                need_cali = false;
-            }
-
             tick++;
             std::cout << "stateMachine: " << "Find Park@Tick: " << tick << std::endl;
         }
@@ -1154,8 +1071,6 @@ void Jet::spin()
         {
             help();
         }
-
-        vision_target_pos_confirmed = false;
 
         pub_jet_state();
 

@@ -104,8 +104,6 @@ protected:
     jet::JetNavFeedback jet_nav_feedback;
     jet::JetNavResult jet_nav_result;
 
-    geometry_msgs::Vector3 dropoint;
-
 protected:
     void calc_jet_pos_calied();
     void pub_pose_calied();
@@ -156,22 +154,14 @@ protected:
     float jet_pos_calied[4];
 
     geometry_msgs::PoseStamped pose_calied;
+    geometry_msgs::Vector3 dropoint;
 
-    float vision_target_local_pos_raw[4];
-    float vision_target_global_pos_raw[4];
-
-    float vision_target_global_distance[4];
-
-    int vision_target_pos_filter_window_size;
-    double vision_target_pos_filter_variance_limit;
-    std::vector<float> vision_target_local_pos_vec[4]; // X,Y,Z,YAW
-    float vision_target_local_pos_est[4];
-    float vision_target_global_pos_est[4];
-    bool vision_target_pos_confirmed;
+    float vision_target_local_pos[4];
+    float vision_target_global_pos[4];
+    float vision_target_global_dis[4];
 
     PID_t pid[4];
 
-    float vision_pos_coeff;
     float takeoff_height;
     float landing_height;
     float normal_altitude;
@@ -207,7 +197,6 @@ public:
 
     bool cmd_jet_state(uint8_t cmd);
     bool action(uint8_t cmd);
-    void vision_cali();
     void stateMachine();
     void spin();
 

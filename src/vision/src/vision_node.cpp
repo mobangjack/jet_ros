@@ -4,12 +4,21 @@
 #include<tf/transform_broadcaster.h>
 #include "geometry_msgs/PoseStamped.h"
 
+/*
 #include "AprilTags/TagDetector.h"
 #include "AprilTags/Tag16h5.h"
 #include "AprilTags/Tag25h7.h"
 #include "AprilTags/Tag25h9.h"
 #include "AprilTags/Tag36h9.h"
 #include "AprilTags/Tag36h11.h"
+*/
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <aruco/aruco.h>
+#include <aruco/boarddetector.h>
+#include <aruco/cvdrawingutils.h>
 
 #include "circle_detector.h"
 
@@ -36,6 +45,13 @@ double tag_size = 0.163513;
 double camera_x_offset = 0.175;
 double camera_y_offset = 0;
 double camera_z_offset = 0;
+
+aruco::BoardConfiguration board_config;
+
+void load_board_config(ros::NodeHandle& nh)
+{
+
+}
 
 double get_projection_ratio(double circle_pixel_radius)
 {
@@ -158,7 +174,8 @@ int main(int argc, char** argv) {
     }
 
     CircleDetector circle_detector(BLUE_CIRCLE);  //1: blue, 2: red=
-    AprilTags::TagDetector tag_detector(m_tagCodes);
+    // AprilTags::TagDetector tag_detector(m_tagCodes);
+    aruco::MarkerDetector marker_detector;
 
     ros::NodeHandle nh;
     ros::Subscriber jet_state_sub = nh.subscribe<std_msgs::UInt8>("/jet_state", 10, jet_state_callback);
@@ -211,6 +228,50 @@ int main(int argc, char** argv) {
             else if (detection_mode == DETECTION_MODE_APRILTAGS)
             {
                 cv::cvtColor(img, img_gray, CV_BGR2GRAY);
+                
+                std::vector<aruco::Marker> markers;
+                aruco::BoardDetector board_detector;
+                aruco::Board board_detected;
+
+                marker_detector.detect(img_gray, markers, camParam, marker_size, false);
+                //Detection of the board
+                float prob = board_detector.detect(markers, board_config, board_detected, cam_param, marker_size);
+                detected = prob > 0.0 && prob < 1.0;
+                if (detected)
+                {
+                    aruco::Marker marker = markers[0];
+                    if (show_image)
+                        marker.draw(img, cv::Scalar(0,0,255), 2);
+
+                    Eigen::Matrix4d transform;
+                    Eigen::Matrix3d rot = transform.block(0, 0, 3, 3);
+
+                    //cv::Mat transform = board_detector.Tvec;
+                    //cv::Mat rot = board_detector.Rvec;
+
+                    Eigen::Quaternion<double> rot_quaternion = Eigen::Quaternion<double>(rot);
+
+                    double rx = transform(0, 3);
+                    double ry = transform(1, 3);
+                    double rz = transform(2, 3);
+
+                    geometry_msgs::PoseStamped target_pos;
+
+                    target_pos.header.stamp = ros::Time::now();
+                    target_pos.header.frame_id = "marker";
+
+                    target_pos.pose.position.x = ry + camera_x_offset; // coordinate transform
+                    target_pos.pose.position.y = -rx + camera_y_offset;
+                    target_pos.pose.position.z = rz + camera_z_offset;
+                    target_pos.pose.orientation.x = rot_quaternion.x();
+                    target_pos.pose.orientation.y = rot_quaternion.y();
+                    target_pos.pose.orientation.z = rot_quaternion.z();
+                    target_pos.pose.orientation.w = rot_quaternion.w();
+
+                    target_pos_pub.publish(target_pos);
+
+                }
+                /*
                 std::vector<AprilTags::TagDetection> tag_detections = tag_detector.extractTags(img_gray);
                 ROS_DEBUG("%d tag detected", (int)tag_detections.size());
 
@@ -247,6 +308,7 @@ int main(int argc, char** argv) {
 
                     target_pos_pub.publish(target_pos);
                 }
+                */
             }
 
             if (show_image)
