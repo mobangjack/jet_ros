@@ -2,10 +2,6 @@
 
 CircleDetector::CircleDetector(int parkcolor) {
     m_parkcolor=parkcolor;
-//    m_originalimg = cv::Mat::zeros(480, 640, CV_8UC3);
-//    m_thresholdimg = cv::Mat::zeros(480, 640, CV_8UC1);
-//    m_dilateimg = cv::Mat::zeros(480, 640, CV_8UC1);
-    
 }
 
 
@@ -17,7 +13,6 @@ bool CircleDetector::detect(cv::Mat &image) {
     imgThreshold();
     imgDilate();
     findParkCircle();
-    //show_result();
     if(m_parkdetected) return true;
     else return false;
 }
@@ -97,12 +92,4 @@ void CircleDetector::draw(cv::Mat& img)
 {
     if(m_parkcolor==1) cv::circle(img, m_center, m_radius, cv::Scalar(0, 0, 255));
     else if(m_parkcolor==2) cv::circle(img, m_center, m_radius, cv::Scalar(255, 0, 0));
-}
-
-bool CircleDetector::show_result() {
-    cv::imshow("circle", m_originalimg);
-    
-//    cv::imshow("thresholdimg",m_thresholdimg);
-//    cv::imshow("dilateimg",m_dilateimg);
-    cv::waitKey(1);
 }

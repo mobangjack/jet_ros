@@ -1,5 +1,7 @@
 <launch>
 
+  <include file="$(find vision)/launch/vision_cfg.launch"/>
+  
   <node pkg="vision" type="vision" name="vision" output="screen">
 
     <param name="show_image" type="bool" value="false" />
@@ -25,5 +27,7 @@
 
     <param name="tag_code" type="string" value="16h5" />
     <param name="tag_size" type="double" value="0.163513" />
+
+    <param name="board_config_file_path" type="string" value="$(find vision)/config/board.yaml" />
   </node>
 </launch>

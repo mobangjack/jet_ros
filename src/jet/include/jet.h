@@ -166,6 +166,8 @@ protected:
     float landing_height;
     float normal_altitude;
 
+    float vision_pos_coeff;
+
     bool use_guidance;
     bool freestyle;
 

@@ -1,0 +1,11 @@
+fx: 488.5
+fy: 489.1
+px: 305.1
+py: 269.8
+tag_size: 0.163
+
+aruco_bc_nmarkers: 1
+aruco_bc_mInfoType: 0
+aruco_bc_markers:
+   - { id:152, corners:[ [ -110., -110., 0. ], [ -10., -110., 0. ], [
+       -10., -10., 0. ], [ -110., -10., 0. ] ] }

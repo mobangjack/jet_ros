@@ -20,5 +20,4 @@ public:
     bool imgDilate();
     bool findParkCircle();
     void draw(cv::Mat& img);
-    bool show_result();
 };

@@ -48,6 +48,8 @@
         "vector": "cpp",
         "string": "cpp",
         "*.ipp": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "bitset": "cpp",
+        "valarray": "cpp"
     }
 }

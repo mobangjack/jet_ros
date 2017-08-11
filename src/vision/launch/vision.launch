@@ -1,5 +1,8 @@
 <launch>
 
+
+  <include file="$(find vision)/launch/vision_cfg.launch"/>
+
   <node pkg="vision" type="vision" name="vision" output="screen">
 
     <param name="show_image" type="bool" value="true" />
@@ -24,6 +27,8 @@
     <param name="jet_state_detect_circle" type="int" value="11" />
 
     <param name="tag_code" type="string" value="16h5" />
-    <param name="tag_size" type="double" value="0.163513" />
+    <param name="tag_size" type="double" value="0.1785" />
+
+    <param name="board_config_file_path" type="string" value="$(find vision)/config/board.yaml" />
   </node>
 </launch>
