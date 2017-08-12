@@ -1,0 +1,4 @@
+circle: {
+  inner_radius: 0.45, 
+  outer_radius: 0.50
+}

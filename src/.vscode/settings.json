@@ -50,6 +50,7 @@
         "*.ipp": "cpp",
         "core": "cpp",
         "bitset": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "dense": "cpp"
     }
 }

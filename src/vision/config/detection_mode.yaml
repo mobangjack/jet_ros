@@ -1,0 +1,4 @@
+detection_mode: {
+  marker: 6, 
+  cirlce: 11
+}

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <launch>
-	<include file="$(find vision)/launch/vision_manifold_config.launch"/>
+	<include file="$(find vision)/launch/vision_laptop_config.launch"/>
 
 	<param name="spin_rate" type="int" value="30" />
 	<param name="camera_x_offset" type="double" value="0.175" />
@@ -30,6 +30,8 @@
 	<arg name="video_info_topic" default="camera_info"/>
 	<arg name="video_rectified" default="true" />
 
+	<param name="cam_param_file_path" type="string" value="$(arg camera_info)" />
+
   <group if="$(arg camera_enable)">
 	    <node pkg="usb_cam" type="usb_cam_node" name="usb_cam$(arg uid)" output="screen">
 			<param name="video_device" value="$(arg camera_device)" />
@@ -55,7 +57,7 @@
 		</node>
 	</group>
 
-	<node ns="/" pkg="vision" type="vision_node" name="vision_node$(arg uid)" output="screen">
+	<node ns="/" pkg="vision" type="vision" name="vision_node$(arg uid)" output="screen">
 		<remap from="/camera_info" to="$(arg video_namespace)/$(arg video_info_topic)" />
 		<remap from="/image" to="$(arg video_namespace)/$(arg video_image_topic)" />
 

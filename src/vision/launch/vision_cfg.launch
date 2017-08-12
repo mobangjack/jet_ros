@@ -1,4 +1,0 @@
-<launch>
-	<rosparam command="load" file="$(find vision)/config/marker_id_list.yaml" />
-</launch>
-
