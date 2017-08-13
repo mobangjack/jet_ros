@@ -537,7 +537,8 @@ bool Jet::doFlyToCar()
 
 bool Jet::doFindCar()
 {
-    return (!vision_callback_timer.timeout());
+    //return (!vision_callback_timer.timeout());
+    return true;
 }
 
 bool Jet::doServeCar()
@@ -583,7 +584,8 @@ bool Jet::doFlyBack()
 
 bool Jet::doFindPark()
 {
-    return (!vision_callback_timer.timeout());
+    //return (!vision_callback_timer.timeout());
+    return true;
 }
 
 bool Jet::doVisualServoLanding()
