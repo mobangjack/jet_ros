@@ -25,7 +25,7 @@
 	</node>
 
 	<group if="$(arg display_result)">
-		<node ns="/" pkg="image_view" type="image_view" name="image_view" output="screen">
+		<node ns="/" pkg="image_view" type="image_view" name="vision_view" output="screen">
 			<remap from="image" to="/vision/result" />
 
 			<param name="autosize" type="bool" value="true" />
