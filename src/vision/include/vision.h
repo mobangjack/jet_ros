@@ -76,7 +76,7 @@ protected:
     ros::Publisher detection_mode_pub;
     image_transport::Publisher image_pub;
 
-    // services
+    // service servers
     ros::ServiceServer reload_detmod_param_srv;
     ros::ServiceServer reload_circle_param_srv;
     ros::ServiceServer reload_marker_param_srv;
@@ -97,7 +97,6 @@ protected:
     int detection_mode_circle;
     int detection_mode;
     bool draw_result;
-    bool draw_markers;
     bool draw_markers_cube;
     bool draw_markers_axis;
     bool cam_info_received;

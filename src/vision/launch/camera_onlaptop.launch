@@ -7,7 +7,7 @@
 	<arg name="camera_width" default="640"/>
 	<arg name="camera_height" default="480"/>
 	<arg name="camera_fps"  default="30"/>
-	<arg name="camera_preview" default="true"/>
+	<arg name="camera_preview" default="false"/>
 	
   	<group if="$(arg camera_enable)">
 		<node pkg="usb_cam" type="usb_cam_node" name="usb_cam" output="screen">

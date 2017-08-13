@@ -38,15 +38,15 @@ bool CircleDetector::detect(cv::Mat &image)
 	  // Threshold the HSV image, keep only the red pixels
     cv::Mat lower_red_hue_range;
     cv::Mat upper_red_hue_range;
-    cv::inRange(hsv_image, cv::Scalar(0, 100, 100), cv::Scalar(10, 255, 255), lower_red_hue_range);
-    cv::inRange(hsv_image, cv::Scalar(156, 100, 100), cv::Scalar(180, 255, 255), upper_red_hue_range);
+    cv::inRange(hsv_image, cv::Scalar(0, 50, 50), cv::Scalar(10, 255, 255), lower_red_hue_range);
+    cv::inRange(hsv_image, cv::Scalar(156, 50, 50), cv::Scalar(180, 255, 255), upper_red_hue_range);
 
     // Combine the above two images
     cv::Mat red_hue_image;
     cv::addWeighted(lower_red_hue_range, 1.0, upper_red_hue_range, 1.0, 0.0, red_hue_image);
 
     cv::Mat blue_hue_image;
-    cv::inRange(hsv_image, cv::Scalar(100, 100, 100), cv::Scalar(124, 255, 255), blue_hue_image);
+    cv::inRange(hsv_image, cv::Scalar(100, 50, 50), cv::Scalar(124, 255, 255), blue_hue_image);
 
     cv::Mat mix_hue_image;
     cv::addWeighted(red_hue_image, 1.0, blue_hue_image, 1.0, 0.0, mix_hue_image);

@@ -1,13 +1,13 @@
 
 #include "vision.h"
 
-Vision::Vision() : nh("~"), image_transport(nh), cam_info_received(false)
+Vision::Vision() : nh("~"), image_transport(nh), cam_info_received(false), detection_mode(0)
 {
     ROS_INFO("Vision: loading parameters");
     // private parameters
     nh.param<int>("spin_rate", 30);
-    nh.param<bool>("image_is_rectified", image_is_rectified, true);
-    nh.param<bool>("draw_markers", draw_markers, false);
+    nh.param<bool>("image_is_rectified", image_is_rectified, true); 
+    nh.param<bool>("draw_result", draw_result, false);
     nh.param<bool>("draw_markers_cube", draw_markers_cube, false);
     nh.param<bool>("draw_markers_axis", draw_markers_axis, false);
     nh.param<bool>("detect_markers_only", detect_markers_only, false);
@@ -259,14 +259,17 @@ void Vision::image_callback(const sensor_msgs::ImageConstPtr& msg)
         if (detected)
         {
             publish_target_pose();
-            if (draw_result) publish_result_image();
         }
+        if (draw_result)
+        {
+            publish_result_image();
+        }
+        publish_detection_mode();
     }
     catch (cv_bridge::Exception& e)
     {
         ROS_ERROR("cv_bridge exception: %s", e.what());
     }
-    publish_detection_mode();
 }
 
 // wait for one camerainfo, then shut down that subscriber
@@ -280,10 +283,31 @@ void Vision::cam_info_callback(const sensor_msgs::CameraInfo &msg)
 
 void Vision::jet_state_callback(const std_msgs::UInt8ConstPtr& jet_state_msg)
 {
+    static uint8_t last_detection_mode = 0;
+    static bool is_capturing = true;
+    last_detection_mode = detection_mode;
     detection_mode = jet_state_msg->data;
     if (jet_state_msg->data == detection_mode_circle && detect_markers_only)
     {
         detection_mode = detection_mode_marker;
+    }
+    if (is_capturing)
+    {
+        std_srvs::Empty req;
+        ros::service::call("/usb_cam/stop_capture", req);
+        is_capturing = false;
+    }
+    if ((detection_mode == detection_mode_circle || detection_mode == detection_mode_marker) &&
+        (last_detection_mode != detection_mode_circle && last_detection_mode != detection_mode_marker))
+    {
+        std_srvs::Empty req;
+        ros::service::call("/usb_cam/start_capture", req);
+    }
+    if ((last_detection_mode == detection_mode_circle || last_detection_mode == detection_mode_marker) &&
+        (detection_mode != detection_mode_circle && detection_mode != detection_mode_marker))
+    {
+        std_srvs::Empty req;
+        ros::service::call("/usb_cam/stop_capture", req);
     }
 }
 
