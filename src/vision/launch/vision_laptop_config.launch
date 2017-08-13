@@ -1,7 +1,0 @@
-<launch>
-	<arg name="namespace" default="vision" />
-	
-	<include file="$(find vision)/launch/vision_common_config.launch"/>
-
-	<rosparam ns="$(arg namespace)/camera" command="load" file="$(find vision)/config/camera_onlaptop.yaml" />
-</launch>

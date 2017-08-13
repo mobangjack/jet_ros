@@ -70,10 +70,11 @@ public:
     } JetCmd_e;
 
 public:
-    Jet(ros::NodeHandle& nh);
+    Jet();
     ~Jet();
 
 protected:
+    bool enable_serial;
     int uart_fd;
     std::string serial_port;
     int serial_baudrate;
@@ -82,6 +83,7 @@ protected:
 
     std::vector<int> duration;
 
+    // private node handle
     ros::NodeHandle nh;
 
     ros::Subscriber odometry_sub;
@@ -138,7 +140,7 @@ protected:
     bool jet_nav_action_callback(const jet::JetNavGoalConstPtr& goal);
 
 protected:
-    DJIDrone drone;
+    DJIDrone* drone;
     uint8_t jet_state;
 
     int odom_callback_timeout;
@@ -165,8 +167,6 @@ protected:
     float takeoff_height;
     float landing_height;
     float normal_altitude;
-
-    float vision_pos_coeff;
 
     bool use_guidance;
     bool freestyle;

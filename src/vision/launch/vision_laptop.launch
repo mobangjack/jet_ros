@@ -1,77 +1,35 @@
-<?xml version="1.0" encoding="utf-8"?>
-
 <launch>
-	<include file="$(find vision)/launch/vision_laptop_config.launch"/>
+	<include file="$(find vision)/launch/camera_onlaptop.launch"/>
 
-	<param name="spin_rate" type="int" value="30" />
-	<param name="camera_x_offset" type="double" value="0.175" />
-    <param name="camera_y_offset" type="double" value="0" />
-    <param name="camera_z_offset" type="double" value="0" />
+	<arg name="display_result" default="false"/>
 
-	<param name="draw_result" type="bool" value="true"/>
-
-	<arg name="camera_enable" default="true"/>
-	<arg name="camera_device" default="/dev/video0"/>
-	<arg name="camera_info" default="$(find vision)/config/camera_laptop.yaml"/>
-	<arg name="camera_frame_id" default="usb_cam"/>
-	<arg name="camera_width" default="640"/>
-	<arg name="camera_height" default="480" />
-	<arg name="camera_fps"  default="30"/>
+	<node pkg="vision" type="vision" name="vision" output="screen">
 	
-	<arg name="result_display" default="true"/>
-	<arg name="result_autosize" default="true"/>
-	<arg name="result_draw_markers" default="true" />
-	<arg name="result_draw_markers_cube" default="false" />
-	<arg name="result_draw_markers_axis" default="true" />
+		<remap from="/camera_info" to="usb_cam/camera_info" />
+		<remap from="/image" to="usb_cam/image_raw" />
 
-	<arg name="uid" default=""/>
-	<arg name="video_namespace" default="usb_cam"/>
-	<arg name="video_image_topic" default="image_raw"/>
-	<arg name="video_info_topic" default="camera_info"/>
-	<arg name="video_rectified" default="true" />
+		<rosparam command="load" file="$(find vision)/config/circle.yaml" />
+		<rosparam command="load" file="$(find vision)/config/marker.yaml" />
+		<rosparam command="load" file="$(find vision)/config/detection_mode.yaml" />
 
-	<param name="cam_param_file_path" type="string" value="$(arg camera_info)" />
+		<param name="camera_x_offset" type="double" value="0.175" />
+		<param name="camera_y_offset" type="double" value="0" />
+		<param name="camera_z_offset" type="double" value="0" />
 
-  <group if="$(arg camera_enable)">
-	    <node pkg="usb_cam" type="usb_cam_node" name="usb_cam$(arg uid)" output="screen">
-			<param name="video_device" value="$(arg camera_device)" />
-      <param name="image_width" value="$(arg camera_width)" />
-      <param name="image_height" value="$(arg camera_height)" />
-      <param name="pixel_format" value="yuyv" />
-      <param name="io_method" value="mmap"/>
-      <param name="framerate" value="$(arg camera_fps)" />
-      <param name="brightness" value="-1" />
-      <param name="contrast" value="-1" />
-      <param name="saturation" value="-1" />
-      <param name="sharpness" value="-1" />
-      <param name="autofocus" value="false" />
-      <param name="focus" value="-1" />
-      <param name="autoexposure" value="false" />
-      <param name="exposure" value="100" />
-      <param name="gain" value="-1" />
-      <param name="auto_white_balance" value="true" />
-      <param name="white_balance" value="4000" />
-      <param name="camera_frame_id" value="/$(arg camera_frame_id)" />
-      <param name="camera_name" value="usb_cam" />
-      <param name="camera_info_url" value="$(arg camera_info)" />
-		</node>
-	</group>
-
-	<node ns="/" pkg="vision" type="vision" name="vision_node$(arg uid)" output="screen">
-		<remap from="/camera_info" to="$(arg video_namespace)/$(arg video_info_topic)" />
-		<remap from="/image" to="$(arg video_namespace)/$(arg video_image_topic)" />
-
-		<param name="image_is_rectified" type="bool" value="$(arg video_rectified)"/>
-		<param name="draw_markers" type="bool" value="$(arg result_draw_markers)" />
-		<param name="draw_markers_cube" type="bool" value="$(arg result_draw_markers_cube)" />
-		<param name="draw_markers_axis" type="bool" value="$(arg result_draw_markers_axis)" />
+		<param name="spin_rate" type="int" value="30" />
+		<param name="detect_markers_only" type="bool" value="false"/>
+		<param name="draw_result" type="bool" value="$(arg display_result)"/>
+		<param name="image_is_rectified" type="bool" value="true"/>
+		<param name="draw_markers" type="bool" value="true" />
+		<param name="draw_markers_cube" type="bool" value="false" />
+		<param name="draw_markers_axis" type="bool" value="true" />
 	</node>
 
-	<group if="$(arg result_display)">
-		<node ns="/" pkg="image_view" type="image_view" name="image_view$(arg uid)" output="screen">
-			<remap from="image" to="/vision$(arg uid)/result" />
+	<group if="$(arg display_result)">
+		<node ns="/" pkg="image_view" type="image_view" name="vision_view" output="screen">
+			<remap from="image" to="/vision/result" />
 
-			<param name="autosize" type="bool" value="$(arg result_autosize)" />
+			<param name="autosize" type="bool" value="true" />
 		</node>
 	</group>
 

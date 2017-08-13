@@ -16,56 +16,68 @@
 
 #include "jet.h"
 
-Jet::Jet(ros::NodeHandle& nh) : drone(nh), uart_fd(-1), calied(false), use_guidance(false), 
+Jet::Jet() : nh("~"), uart_fd(-1), calied(false), use_guidance(false), 
 freestyle(false), odom_callback_timer(60), vision_callback_timer(500)
 {
-    this->nh = nh;
+    ROS_INFO("Jet: loading parameters");
+    nh.param<int>("spin_rate", spin_rate, 50);
 
-    ros::NodeHandle np("~");
+    nh.param<bool>("enable_serial", enable_serial, false); 
+    nh.param<std::string>("serial_port", serial_port, "/dev/ttyTHS2"); 
+    nh.param<int>("serial_baudrate", serial_baudrate, 115200);
+    nh.param<bool>("use_guidance", use_guidance, false);
 
-    np.param<int>("spin_rate", spin_rate, 50);
-    np.param<std::string>("serial_port", serial_port, "/dev/ttyTHS2"); 
-    np.param<int>("serial_baudrate", serial_baudrate, 115200);
-    np.param<bool>("use_guidance", use_guidance, false);
-
-    int ret = uart_open(&uart_fd, serial_port.c_str(), serial_baudrate, UART_OFLAG_WR);
-    if (ret < 0) {
-        fprintf(stderr, "Error, cannot bind to the specified serial port %s.\n"
-                , serial_port.c_str());
-    }
-
+    // load parameters
     load_pid_param(nh);
-    load_vision_param(nh);
     load_flight_param(nh);
     load_dropoint_param(nh);
     load_duration_param(nh);
     load_timeout_param(nh);
 
-    charge_srv = nh.advertiseService("/charge", &Jet::charge_callback, this);
-    cmd_grabber_srv = nh.advertiseService("/grabber/cmd", &Jet::cmd_grabber_callback, this);
-    stat_grabber_srv = nh.advertiseService("/grabber/stat", &Jet::stat_grabber_callback, this);
+    if (enable_serial)
+    {
+        int ret = uart_open(&uart_fd, serial_port.c_str(), serial_baudrate, UART_OFLAG_WR);
+        if (ret < 0) {
+            fprintf(stderr, "Error, cannot bind to the specified serial port %s.\n"
+                    , serial_port.c_str());
+        }
+    }
 
-    reload_pid_param_srv = nh.advertiseService("/reload_pid_param", &Jet::reload_pid_param_callback, this);
-    reload_vision_param_srv = nh.advertiseService("/reload_vision_param", &Jet::reload_vision_param_callback, this);
-    reload_flight_param_srv = nh.advertiseService("/reload_flight_param", &Jet::reload_flight_param_callback, this);
-    reload_dropoint_param_srv = nh.advertiseService("/reload_dropoint_param", &Jet::reload_dropoint_param_callback, this);
-    reload_duration_param_srv = nh.advertiseService("/reload_duration_param", &Jet::reload_duration_param_callback, this);
+    ROS_INFO("Jet: creating drone instance");
+    // initialize dji drone
+    ros::NodeHandle n;
+    drone = new DJIDrone(n);
 
-    odometry_sub = nh.subscribe("/odom_raw", 10, &Jet::odometry_callback, this);
-    vision_sub = nh.subscribe("/vision/target_pos", 10, &Jet::vision_callback, this);
+    ROS_INFO("Jet: initilaizing sevices");
+    charge_srv = nh.advertiseService("/jet/charge", &Jet::charge_callback, this);
+    cmd_grabber_srv = nh.advertiseService("/jet/grabber/cmd", &Jet::cmd_grabber_callback, this);
+    stat_grabber_srv = nh.advertiseService("/jet/grabber/stat", &Jet::stat_grabber_callback, this);
 
-    jet_state_pub = nh.advertise<std_msgs::UInt8>("/jet_state", 10);
-    pose_calied_pub = nh.advertise<geometry_msgs::PoseStamped>("/pose_calied", 10);
+    reload_pid_param_srv = nh.advertiseService("/jet/reload_pid_param", &Jet::reload_pid_param_callback, this);
+    reload_flight_param_srv = nh.advertiseService("/jet/reload_flight_param", &Jet::reload_flight_param_callback, this);
+    reload_dropoint_param_srv = nh.advertiseService("/jet/reload_dropoint_param", &Jet::reload_dropoint_param_callback, this);
+    reload_duration_param_srv = nh.advertiseService("/jet/reload_duration_param", &Jet::reload_duration_param_callback, this);
 
+    ROS_INFO("Jet: initilaizing subscribers");
+    odometry_sub = nh.subscribe("/jet/odom_in", 10, &Jet::odometry_callback, this);
+    vision_sub = nh.subscribe("/vision/target_pose", 10, &Jet::vision_callback, this);
+
+    jet_state_pub = nh.advertise<std_msgs::UInt8>("/jet/state", 10);
+    pose_calied_pub = nh.advertise<geometry_msgs::PoseStamped>("/jet/pose_calied", 10);
+
+    ROS_INFO("Jet: initilaizing action servers");
     jet_nav_action_server = new JetNavActionServer(nh,
-            "jet_nav_action",
+            "/jet/nav_action",
             boost::bind(&Jet::jet_nav_action_callback, this, _1), false);
     jet_nav_action_server->start();
+
+    ROS_INFO("Jet: initilaizition done");
 
 }
 
 Jet::~Jet()
 {
+    delete drone;
     delete jet_nav_action_server;
     if (uart_fd != -1)
     {
@@ -76,31 +88,31 @@ Jet::~Jet()
 
 void Jet::load_dropoint_param(ros::NodeHandle& nh)
 {
-    nh.param<double>("/dropoint/x", dropoint.x, 0.0);
-    nh.param<double>("/dropoint/y", dropoint.y, 0.0);
-    nh.param<double>("/dropoint/z", dropoint.z, 0.0);
+    nh.param<double>("/jet/dropoint/x", dropoint.x, 0.0);
+    nh.param<double>("/jet/dropoint/y", dropoint.y, 0.0);
+    nh.param<double>("/jet/dropoint/z", dropoint.z, 0.0);
 
-    std::cout << "dropoint: [" << dropoint.x << ", " 
+    std::cout << "/jet/dropoint: [" << dropoint.x << ", " 
               << dropoint.y << ", " << dropoint.z << "]" << std::endl;
 }
 
 void Jet::fill_pid_param(ros::NodeHandle& nh, int i, const char* axis)
 {
     std::stringstream ss;
-    ss << "/pid/" << axis << "/";
+    ss << "/jet/pid/" << axis << "/";
     std::string root = ss.str();
-    nh.param<float>(root + "kp", pid[i].kp, 0.0f);
-    nh.param<float>(root + "ki", pid[i].ki, 0.0f);
-    nh.param<float>(root + "kd", pid[i].kd, 0.0f);
-    nh.param<float>(root + "db", pid[i].db, 0.0f);
-    nh.param<float>(root + "it", pid[i].it, 0.0f);
-    nh.param<float>(root + "Emax", pid[i].Emax, 0.0f);
-    nh.param<float>(root + "Pmax", pid[i].Pmax, 0.0f);
-    nh.param<float>(root + "Imax", pid[i].Imax, 0.0f);
-    nh.param<float>(root + "Dmax", pid[i].Dmax, 0.0f);
-    nh.param<float>(root + "Omax", pid[i].Omax, 0.0f);
+    nh.param<float>(root + "kp", pid[i].kp, 0);
+    nh.param<float>(root + "ki", pid[i].ki, 0);
+    nh.param<float>(root + "kd", pid[i].kd, 0);
+    nh.param<float>(root + "db", pid[i].db, 0);
+    nh.param<float>(root + "it", pid[i].it, 0);
+    nh.param<float>(root + "Emax", pid[i].Emax, 0);
+    nh.param<float>(root + "Pmax", pid[i].Pmax, 0);
+    nh.param<float>(root + "Imax", pid[i].Imax, 0);
+    nh.param<float>(root + "Dmax", pid[i].Dmax, 0);
+    nh.param<float>(root + "Omax", pid[i].Omax, 0);
 
-    std::cout << "pid " << axis << " : { kp: " << pid[i].kp 
+    std::cout << "/jet/pid " << axis << " : { kp: " << pid[i].kp 
               << ", ki: " << pid[i].ki << ", kd: "<< pid[i].kd
               << ", db: " << pid[i].db << ", it: "<< pid[i].it
               << ", Emax: " << pid[i].Emax << ", Pmax: "<< pid[i].Pmax
@@ -116,20 +128,14 @@ void Jet::load_pid_param(ros::NodeHandle& nh)
     fill_pid_param(nh, 3, "yaw");
 }
 
-void Jet::load_vision_param(ros::NodeHandle& nh)
-{
-    nh.param<float>("vision_pos_coeff", vision_pos_coeff, 0.001f);
-    std::cout << "vision_pos_coeff: " << vision_pos_coeff << std::endl;
-}
-
 void Jet::load_flight_param(ros::NodeHandle& nh)
 {
-    nh.param<float>("takeoff_height", takeoff_height, 1.2f);
-    nh.param<float>("landing_height", landing_height, 0.3f);
-    nh.param<float>("normal_altitude", normal_altitude, 1.2);
-    std::cout << "takeoff_height: " << takeoff_height << std::endl;
-    std::cout << "landing_height: " << landing_height << std::endl;
-    std::cout << "normal_altitude: " << normal_altitude << std::endl;
+    nh.param<float>("/jet/takeoff_height", takeoff_height, 1.2);
+    nh.param<float>("/jet/landing_height", landing_height, 0.3);
+    nh.param<float>("/jet/normal_altitude", normal_altitude, 1.2);
+    std::cout << "/jet/takeoff_height: " << takeoff_height << std::endl;
+    std::cout << "/jet/landing_height: " << landing_height << std::endl;
+    std::cout << "/jet/normal_altitude: " << normal_altitude << std::endl;
 }
 
 void Jet::load_duration_param(ros::NodeHandle& nh)
@@ -145,10 +151,10 @@ void Jet::load_duration_param(ros::NodeHandle& nh)
 
 void Jet::load_timeout_param(ros::NodeHandle& nh)
 {
-    nh.param<int>("odom_callback_timeout", odom_callback_timeout, 60);
-    nh.param<int>("vision_callback_timeout", vision_callback_timeout, 500);
-    std::cout << "odom_callback_timeout: " << odom_callback_timeout << std::endl;
-    std::cout << "vision_callback_timeout: " << vision_callback_timeout << std::endl;
+    nh.param<int>("/jet/odom_callback_timeout", odom_callback_timeout, 60);
+    nh.param<int>("/jet/vision_callback_timeout", vision_callback_timeout, 500);
+    std::cout << "/jet/odom_callback_timeout: " << odom_callback_timeout << std::endl;
+    std::cout << "/jet/vision_callback_timeout: " << vision_callback_timeout << std::endl;
 }
 
 void Jet::odometry_callback(const nav_msgs::OdometryConstPtr& odometry)
@@ -217,10 +223,11 @@ void Jet::tf(const float* local, float* global)
     global[1] = y + jet_pos_calied[1];
     global[2] = jet_pos_calied[2] - local[2];
     global[3] = jet_pos_calied[3] + local[3];
-    for (int i = 0; i < 4; i++)
-    {
-        std::cout << "tf: global[" << i << "]: " << global[i] << std::endl;
-    }
+    
+    //for (int i = 0; i < 4; i++)
+    //{
+    //    std::cout << "Jet::tf global[" << i << "]: " << global[i] << std::endl;
+    //}
 }
 
 void Jet::vision_callback(const geometry_msgs::PoseStamped& pose_stamped)
@@ -276,12 +283,6 @@ bool Jet::reload_duration_param_callback(std_srvs::Empty::Request& request, std_
     return true;
 }
 
-bool Jet::reload_vision_param_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
-{
-    load_vision_param(nh);
-    return true;
-}
-
 bool Jet::reload_flight_param_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
     load_flight_param(nh);
@@ -296,6 +297,10 @@ bool Jet::reload_timeout_param_callback(std_srvs::Empty::Request& request, std_s
 
 bool Jet::cmd_grabber(uint8_t c)
 {
+    if (!enable_serial)
+    {
+        return true;
+    }
     if (uart_fd == -1)
     {
         return false;
@@ -311,6 +316,10 @@ bool Jet::cmd_grabber(uint8_t c)
 
 uint8_t Jet::stat_grabber()
 {
+    if (!enable_serial)
+    {
+        return 0xff;
+    }
     if (uart_fd == -1)
     {
         return 0xff;
@@ -340,7 +349,7 @@ bool Jet::control(uint8_t ground, float x, float y, float z, float yaw)
         flag |= Flight::HorizontalCoordinate::HORIZONTAL_BODY;
     }
 
-    return drone.attitude_control(flag, x, y, z, yaw);
+    return drone->attitude_control(flag, x, y, z, yaw);
 }
 
 bool Jet::goal_reached()
@@ -483,7 +492,7 @@ bool Jet::jet_nav_action_callback(const jet::JetNavGoalConstPtr& goal)
 
 uint8_t Jet::status()
 {
-    return drone.flight_status;
+    return drone->flight_status;
 }
 
 bool Jet::doStandby()
@@ -498,12 +507,12 @@ bool Jet::doGrabBullets()
 
 bool Jet::doRequestControl()
 {
-    return drone.request_sdk_permission_control();
+    return drone->request_sdk_permission_control();
 }
 
 bool Jet::doTakeoff()
 {
-    return drone.takeoff();
+    return drone->takeoff();
 }
 
 bool Jet::doToNormalAltitude()
@@ -535,7 +544,7 @@ bool Jet::doServeCar()
 {
     if (vision_callback_timer.timeout())
     {
-        std::cout << "WARNING@Jet::doServeCar(): vision callback timeout, stop control" << std::endl;
+        std::cout << "WARNING@Jet::doServeCar(): vision callback timeout, control is stopped" << std::endl;
         return false;
     }
 
@@ -581,7 +590,7 @@ bool Jet::doVisualServoLanding()
 {
     if (vision_callback_timer.timeout())
     {
-        std::cout << "WARNING@Jet::doVisualServoLanding(): vision callback timeout, stop control" << std::endl;
+        std::cout << "WARNING@Jet::doVisualServoLanding(): vision callback timeout, control is stopped" << std::endl;
         return false;
     }
 
@@ -595,12 +604,12 @@ bool Jet::doVisualServoLanding()
 
 bool Jet::doLanding()
 {
-    return drone.landing();
+    return drone->landing();
 }
 
 bool Jet::doReleaseControl()
 {
-    return drone.release_sdk_permission_control();
+    return drone->release_sdk_permission_control();
 }
 
 bool Jet::cmd_jet_state(uint8_t cmd)
@@ -1082,9 +1091,7 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "jet");
 
-    ros::NodeHandle nh;
-
-    Jet jet(nh);
+    Jet jet;
 
     jet.spin();
 

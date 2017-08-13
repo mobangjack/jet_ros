@@ -1,6 +1,0 @@
-<launch>
-	<arg name="namespace" default="vision" />
-	<rosparam ns="$(arg namespace)" command="load" file="$(find vision)/config/circle.yaml" />
-	<rosparam ns="$(arg namespace)" command="load" file="$(find vision)/config/marker.yaml" />
-	<rosparam ns="$(arg namespace)" command="load" file="$(find vision)/config/detection_mode.yaml" />
-</launch>

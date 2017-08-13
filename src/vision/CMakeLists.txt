@@ -93,7 +93,7 @@ target_link_libraries(circle_detector
 )
 
 add_executable(vision
-    src/vision_node.cpp
+    src/vision.cpp
 )
 
 add_dependencies(vision vision_generate_messages_cpp)

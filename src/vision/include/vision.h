@@ -16,7 +16,6 @@
 
 #pragma once
 
-
 #include <ros/ros.h>
 #include <std_msgs/UInt8.h>
 #include <tf/transform_broadcaster.h>
@@ -38,14 +37,13 @@
 #include <ar_sys/utils.h>
 #include "circle/circle_detector.h"
 
-class VisionNode
+class Vision
 {
 public:
-    VisionNode(ros::NodeHandle& nh);
+    Vision();
 
 protected:
     // camera parameters
-    std::string cam_param_file_path;
     aruco::CameraParameters cam_param;
 
     // marker configuration
@@ -63,10 +61,8 @@ protected:
     // circle detector
     CircleDetector circle_detector;
 
-    int detection_mode_marker;
-    int detection_mode_circle;
-
 protected:
+    // private node handle
     ros::NodeHandle nh;
 
     // subscribers
@@ -76,13 +72,12 @@ protected:
     ros::Subscriber jet_state_sub;
 
     // publishers
-    ros::Publisher target_pos_pub;
+    ros::Publisher target_pose_pub;
     ros::Publisher detection_mode_pub;
     image_transport::Publisher image_pub;
 
     // services
-    ros::ServiceServer reload_board_param_srv;
-    ros::ServiceServer reload_camera_param_srv;
+    ros::ServiceServer reload_detmod_param_srv;
     ros::ServiceServer reload_circle_param_srv;
     ros::ServiceServer reload_marker_param_srv;
 
@@ -93,12 +88,13 @@ protected:
     void cam_info_callback(const sensor_msgs::CameraInfo &msg);
 
     // service callbacks
-    bool reload_camera_param_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
     bool reload_circle_param_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
     bool reload_marker_param_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
     bool reload_detmod_param_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
 
 protected:
+    int detection_mode_marker;
+    int detection_mode_circle;
     int detection_mode;
     bool draw_result;
     bool draw_markers;
@@ -106,7 +102,7 @@ protected:
     bool draw_markers_axis;
     bool cam_info_received;
     bool image_is_rectified;
-    bool detect_marker_only;
+    bool detect_markers_only;
 
     float camera_x_offset;
     float camera_y_offset;
@@ -117,18 +113,16 @@ protected:
     cv::Mat in_image, result_image;
 
     // target pose message to publish
-    geometry_msgs::PoseStamped target_pos;
+    geometry_msgs::PoseStamped target_pose;
 
 protected:
     bool process_marker();
     bool process_circle();
     void publish_detection_mode();
-    void publish_target_pos();
+    void publish_target_pose();
     void publish_result_image();
 
-
 protected:
-    bool load_camera_param(ros::NodeHandle& nh);
     bool load_circle_param(ros::NodeHandle& nh);
     bool load_marker_param(ros::NodeHandle& nh);
     bool load_detmod_param(ros::NodeHandle& nh);
