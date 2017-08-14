@@ -16,6 +16,9 @@
 
 #include "circle/circle_detector.h"
 
+#define SHOW_IMG 0
+#define SHOW_FPS 1
+
 CircleDetector::CircleDetector()
 {
 
@@ -32,14 +35,14 @@ void CircleDetector::preprocess(cv::Mat &bgr_image, cv::Mat &opt_image)
     cv::cvtColor(opt_image, opt_image, cv::COLOR_BGR2HSV);
 
     // Threshold the HSV image, keep only the red pixels
-    cv::Mat lower_red_hue_range;
-    cv::Mat upper_red_hue_range;
-    cv::inRange(opt_image, cv::Scalar(0, 50, 50), cv::Scalar(10, 255, 255), lower_red_hue_range);
-    cv::inRange(opt_image, cv::Scalar(156, 50, 50), cv::Scalar(180, 255, 255), upper_red_hue_range);
+    cv::Mat lower_red_hue_image;
+    cv::Mat upper_red_hue_image;
+    cv::inRange(opt_image, cv::Scalar(0, 50, 50), cv::Scalar(10, 255, 255), lower_red_hue_image);
+    cv::inRange(opt_image, cv::Scalar(156, 50, 50), cv::Scalar(180, 255, 255), upper_red_hue_image);
 
     // Combine the above two red hue images
     cv::Mat red_hue_image;
-    cv::addWeighted(lower_red_hue_range, 1.0, upper_red_hue_range, 1.0, 0.0, red_hue_image);
+    cv::addWeighted(lower_red_hue_image, 1.0, upper_red_hue_image, 1.0, 0.0, red_hue_image);
 
     // Threshold the HSV image, keep only the blue pixels
     cv::Mat blue_hue_image;
@@ -47,12 +50,26 @@ void CircleDetector::preprocess(cv::Mat &bgr_image, cv::Mat &opt_image)
 
     // combine red hue image and blue hue image
     cv::addWeighted(red_hue_image, 1.0, blue_hue_image, 1.0, 0.0, opt_image);
-    
+#if (SHOW_IMG)
+    imshow("lower_red_hue_image", lower_red_hue_image);
+    imshow("upper_red_hue_image", upper_red_hue_image);
+    imshow("red_hue_image", red_hue_image);
+    imshow("blue_hue_image", blue_hue_image);
+    imshow("mix_hue_image", opt_image);
+    waitKey(1);
+#endif   
     // dialate
     cv::dilate(opt_image, opt_image, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(9, 9)), cv::Point(-1, -1), 1);
-
+#if (SHOW_IMG)
+    imshow("dilate_image", opt_image);
+    waitKey(1);
+#endif 
     // gaussian blur
     cv::GaussianBlur(opt_image, opt_image, cv::Size(9, 9), 2, 2);
+#if (SHOW_IMG)
+    imshow("blur_image", opt_image);
+    waitKey(1);
+#endif 
 }
 
 // circleRANSAC
@@ -179,9 +196,9 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 		y = m2_AB * x + b2_AB;	
 		center = cv::Point2d(x,y);
 		radius = cv::norm(center - pointB);
-#if 0		
+#if (SHOW_IMG)		
 		/// geometry debug image
-		if(false)
+		if(true)
 		{
 			Mat debug_image = blur_image.clone();
 			cvtColor(debug_image, debug_image, CV_GRAY2RGB);
@@ -237,9 +254,9 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 		if( (float)votes.size() / (2.0*CV_PI*radius) >= circle_threshold )
 		{
 			circles.push_back(cv::Vec3f(x,y,radius));
-#if 0			
+#if (SHOW_IMG)			
 			// voting debug image
-			if(false)
+			if(true)
 			{
 				Mat debug_image2 = blur_image.clone();
 				cvtColor(debug_image2, debug_image2, CV_GRAY2RGB);
@@ -300,20 +317,29 @@ int CircleDetector::score(cv::Mat &opt_image, cv::Vec3f& circle, int dilate, int
     return count;
 }
 
-bool CircleDetector::detect(cv::Mat &image)
+bool CircleDetector::detect(cv::Mat &image, int method = CIRCLE_DETECTION_METHOD_HOUGH)
 {
     bool detected = false;
-
+#if (SHOW_FPS)
     double t = cv::getTickCount();
-
+#endif
     cv::Mat opt_image;
     
     preprocess(image, opt_image);
 
-    // Use the Hough transform to detect circles in the combined threshold image
     std::vector<cv::Vec3f> circles;
-    //cv::HoughCircles(blur_image, circles, CV_HOUGH_GRADIENT, 1, blur_image.rows/8, 100, 60, 0, 0);
-    circleRANSAC(opt_image, circles, 0.99, 1);
+    
+    if (method == CIRCLE_DETECTION_METHOD_RANSAC)
+    {
+        // Use RANSAC to detect circles
+        circleRANSAC(opt_image, circles, 0.99, 1);
+    }
+    else
+    {
+        // Use the Hough transform to detect circles
+        cv::HoughCircles(opt_image, circles, CV_HOUGH_GRADIENT, 1, opt_image.rows/8, 100, 60, 0, 0);
+    }
+    
     if (circles.size() > 0)
     {
         // Find the inner circle
@@ -325,15 +351,12 @@ bool CircleDetector::detect(cv::Mat &image)
         m_inner_score = score(opt_image, circle, -1, 30);
         detected = true;
     }
-    
+#if (SHOW_FPS)    
     t = (cv::getTickCount() - t) / cv::getTickFrequency();
-    
     std::cout << "fps: " << (1/t) << std::endl;
-    
+#endif   
     return detected;
 }
-
-
 
 void CircleDetector::draw(cv::Mat& image)
 {

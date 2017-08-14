@@ -102,6 +102,7 @@ protected:
     std::vector<int> detection_mode_marker;
     std::vector<int> detection_mode_circle;
     int detection_mode;
+    int circle_detection_method;
     bool draw_result;
     bool draw_markers_cube;
     bool draw_markers_axis;

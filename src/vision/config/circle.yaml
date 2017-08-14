@@ -1,4 +1,5 @@
 circle: {
   inner_radius: 0.45, 
-  outer_radius: 0.50
+  outer_radius: 0.50,
+  detection_method: 0, # 0 : hough transform, 1 : ransac
 }

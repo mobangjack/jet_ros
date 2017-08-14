@@ -10,12 +10,16 @@ Vision::Vision() : nh("~"), image_transport(nh), cam_info_received(false), detec
     nh.param<bool>("draw_result", draw_result, false);
     nh.param<bool>("draw_markers_cube", draw_markers_cube, false);
     nh.param<bool>("draw_markers_axis", draw_markers_axis, false);
-    nh.param<bool>("detect_markers_only", detect_markers_only, false);
+    nh.param<bool>("detect_markers_only", detect_markers_only, false); // circle_detection_method
 
-    // load parameters
+    // load global parameters
+    ROS_INFO("Vision: loading camera parameters");
     load_camera_param(nh);
+    ROS_INFO("Vision: loading circle parameters");
     load_circle_param(nh);
+    ROS_INFO("Vision: loading marker parameters");
     load_marker_param(nh);
+    ROS_INFO("Vision: loading detmod parameters");
     load_detmod_param(nh);
 
     ROS_INFO("Vision: initilaizing subscribers");
@@ -42,11 +46,13 @@ Vision::Vision() : nh("~"), image_transport(nh), cam_info_received(false), detec
 
 bool Vision::load_circle_param(ros::NodeHandle& nh)
 {
-    nh.param<float>("/vision/circle/inner_radius", circle_inner_radius, 0.45);
-    nh.param<float>("/vision/circle/outer_radius", circle_outer_radius, 0.50);
+    nh.param<float>("/circle/inner_radius", circle_inner_radius, 0.45);
+    nh.param<float>("/circle/outer_radius", circle_outer_radius, 0.50);
+    nh.param<int>("circle/detection_method", circle_detection_method, 0);
 
     std::cout << "/vision/circle: {" << "inner_radius: " << circle_inner_radius
-              << ", outer_radius: " << circle_outer_radius << "}" << std::endl;
+              << ", outer_radius: " << circle_outer_radius << ", detection_method: "
+              << circle_detection_method << "}" << std::endl;
 
     return true;
 }
@@ -55,8 +61,8 @@ bool Vision::load_marker_param(ros::NodeHandle& nh)
 {
     marker_id_list.clear();
 
-    nh.param<float>("/vision/marker/size", marker_size, 0.15);
-    ros::param::get("/vision/marker/id_list", marker_id_list);
+    nh.param<float>("/marker/size", marker_size, 0.15);
+    nh.getParam("marker/id_list", marker_id_list);
 
     if (marker_id_list.size() < 1)
     {
@@ -116,7 +122,7 @@ bool Vision::load_detmod_param(ros::NodeHandle& nh)
     {
         std::cout << detection_mode_marker[detection_mode_marker.size() - 1]  << "], ";
     }
-    std::cout << ", circle: [";
+    std::cout << "circle: [";
     for (int i = 0; i < detection_mode_circle.size() - 1; i++)
     {
         std::cout << detection_mode_circle[i]  << ", ";
@@ -294,7 +300,7 @@ bool Vision::detect_marker()
 
 bool Vision::detect_circle()
 {
-    bool detected = circle_detector.detect(in_image);
+    bool detected = circle_detector.detect(in_image, circle_detection_method);
 
     if (detected && draw_result)
     {

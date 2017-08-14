@@ -20,8 +20,14 @@
 
 class CircleDetector {
 public:
+    typedef enum
+    {
+        CIRCLE_DETECTION_METHOD_HOUGH = 0,
+        CIRCLE_DETECTION_METHOD_RANSAC = 1,
+    } CircleDetectMethod_e;
+
     CircleDetector();
-    bool detect(cv::Mat &image);
+    bool detect(cv::Mat &image, int method);
     void draw(cv::Mat& image);
 protected:
     void preprocess(cv::Mat &bgr_image, cv::Mat &opt_image);
