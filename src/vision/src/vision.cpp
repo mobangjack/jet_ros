@@ -94,8 +94,10 @@ bool Vision::load_camera_param(ros::NodeHandle& nh)
     }
     fs["extrinsic_rotation"] >> camera_Rmat;
     fs["extrinsic_translation"] >> camera_Tmat;
-    std::cout << "Extrinsic_R : " << std::endl << camera_Rmat << std::endl;
-    std::cout << "Extrinsic_T : " << std::endl << camera_Tmat << std::endl;
+    camera_Rmat.convertTo(camera_Rmat, CV_32FC1); // convert to f32 to avoid mat mul error
+    camera_Tmat.convertTo(camera_Tmat, CV_32FC1); // convert to f32 to avoid mat mul error
+    std::cout << "camera_Rmat : " << std::endl << camera_Rmat << std::endl;
+    std::cout << "camera_Tmat : " << std::endl << camera_Tmat << std::endl;
     fs.release();
     return true;
 }
@@ -186,7 +188,7 @@ bool Vision::process_marker()
 {
     bool detected = false;
     // detection results will go into "markers"
-    markers.clear();
+    std::vector<aruco::Marker> markers;
     // ok, let's detect
     marker_detector.detect(in_image, markers, cam_param, marker_size, false);
     aruco::Marker marker;
@@ -224,19 +226,23 @@ bool Vision::process_marker()
         cv::Rodrigues(marker.Rvec, R33);
         
         // ROS port
-        for (int i = 1; i < 3; i++)
-        {
-            R33.at<float>(i, i) = -R33.at<float>(i, i); // see @ ar_sys/src/utils.cpp
-        }
+        //for (int i = 1; i < 3; i++)
+        //{
+        //    R33.at<float>(i, i) = -R33.at<float>(i, i); // see @ ar_sys/src/utils.cpp
+        //}
 
-        cv::Mat T31(3, 1, CV_32FC1);
-        for (int i = 0; i < 3; i++)
-        {
-            T31.ptr(0)[i] = marker.Tvec.ptr(0)[i];
-        }
-        
+        //cv::Mat T31(3, 1, CV_32FC1);
+        //for (int i = 0; i < 3; i++)
+        //{
+        //    T31.ptr(0)[i] = marker.Tvec.ptr(0)[i];
+        //}
+
+        //std::cout << "R: " << R33 << std::endl;
+        //std::cout << "T: " << T31 << std::endl;
+        //std::cout << "MT: " << marker.Tvec << std::endl;
+
         target_Rmat = camera_Rmat * R33;
-        target_Tmat = camera_Rmat * T31 + camera_Tmat;
+        target_Tmat = camera_Rmat * marker.Tvec + camera_Tmat;
     }
 
     return detected;

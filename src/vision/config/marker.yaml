@@ -1,4 +1,4 @@
 marker: {
-  size: 0.15, 
-  id_list: [100]
+  size: 0.05, 
+  id_list: [100, 152]
 }

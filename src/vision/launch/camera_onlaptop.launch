@@ -1,6 +1,6 @@
 <launch>
 	<arg name="camera_enable" default="true"/>
-	<arg name="camera_device" default="/dev/video0"/>
+	<arg name="camera_device" default="/dev/video1"/>
 	<arg name="camera_info" default="file://$(find vision)/config/camera_onlaptop.yaml"/>
 	<arg name="camera_name" default="usb_cam"/>
 	<arg name="camera_topic_name" default="/image_raw"/>

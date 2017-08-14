@@ -61,7 +61,6 @@ protected:
 
     // marker detector
     aruco::MarkerDetector marker_detector;
-    std::vector<aruco::Marker> markers;
 
     // circle detector
     CircleDetector circle_detector;
