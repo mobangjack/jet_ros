@@ -222,27 +222,32 @@ bool Vision::process_marker()
             if (draw_markers_axis) aruco::CvDrawingUtils::draw3dAxis(result_image, marker, cam_param);
         }
 
+        // Rearrange axis
+        cv::Mat Rvec = marker.Rvec.clone();
+        cv::Mat Tvec = marker.Tvec.clone();
+
+        // yaw
+        Rvec.at<float>(0 ,0) =  marker.Rvec.at<float>(1, 0);
+        // pitch
+        Rvec.at<float>(1 ,0) =  0; // marker.Rvec.at<float>(0, 0);
+        // roll
+        Rvec.at<float>(2 ,0) =  0; // marker.Rvec.at<float>(2, 0);
+
+        // x
+        Tvec.at<float>(0 ,0) = -marker.Tvec.at<float>(1, 0);
+        // y
+        Tvec.at<float>(1 ,0) =  marker.Tvec.at<float>(0, 0);
+        // z
+        Tvec.at<float>(2 ,0) =  marker.Tvec.at<float>(2, 0);
+
         cv::Mat R33(3, 3, CV_32FC1);
-        cv::Rodrigues(marker.Rvec, R33);
+        cv::Rodrigues(Rvec, R33);
+
+        // std::cout << "R: " << Rvec << std::endl;
+        // std::cout << "T: " << Tvec << std::endl;
         
-        // ROS port
-        //for (int i = 1; i < 3; i++)
-        //{
-        //    R33.at<float>(i, i) = -R33.at<float>(i, i); // see @ ar_sys/src/utils.cpp
-        //}
-
-        //cv::Mat T31(3, 1, CV_32FC1);
-        //for (int i = 0; i < 3; i++)
-        //{
-        //    T31.ptr(0)[i] = marker.Tvec.ptr(0)[i];
-        //}
-
-        //std::cout << "R: " << R33 << std::endl;
-        //std::cout << "T: " << T31 << std::endl;
-        //std::cout << "MT: " << marker.Tvec << std::endl;
-
         target_Rmat = camera_Rmat * R33;
-        target_Tmat = camera_Rmat * marker.Tvec + camera_Tmat;
+        target_Tmat = camera_Rmat * Tvec + camera_Tmat;
     }
 
     return detected;
@@ -284,18 +289,13 @@ bool Vision::process_circle()
     float focal = (fx + fy) / 2.0;
     float tz = focal * ratio;
 
-    cv::Mat R33 = cv::Mat::zeros(3, 3, CV_32FC1);
-    for (int i = 0; i < 3; i++)
-    {
-        R33.at<float>(i, i) = 1; // No rotation for circle
-    }
-
     cv::Mat T31 = cv::Mat::zeros(3, 1, CV_32FC1);
-    T31.at<float>(0, 0) = tx;
-    T31.at<float>(1, 0) = ty;
-    T31.at<float>(2, 0) = tz;
+    T31.at<float>(0, 0) = -ty;
+    T31.at<float>(1, 0) =  tx;
+    T31.at<float>(2, 0) =  tz;
 
-    target_Rmat = camera_Rmat * R33;
+    // No rotation for circle
+    target_Rmat = cv::Mat::eye(3, 3, CV_32FC1);
     target_Tmat = camera_Rmat * T31 + camera_Tmat;
 
     return detected;
