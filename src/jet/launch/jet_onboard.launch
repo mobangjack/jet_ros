@@ -1,7 +1,7 @@
 <launch>
-
-	<node pkg="guidance" type="guidanceNode" name="guidanceNode" output="screen" />
 <!--
+	<node pkg="guidance" type="guidanceNode" name="guidanceNode" output="screen" />
+
 	<include file="$(find dji_sdk)/launch/sdk_manifold.launch"/>
 -->
 
