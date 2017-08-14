@@ -19,6 +19,14 @@
 #define SHOW_IMG 0
 #define SHOW_FPS 1
 
+#if (SHOW_FPS)
+#define printfps(item,t,total) do { \
+std::cout << item << ": " << int(t * 1000) << "ms (" << (int)(1/t) << "fps), total: " \
+          << int(total * 1000) << "ms (" << int(1/total) << "fps), time cost: %" \
+          << int(100*t/total) << std::endl; \
+} while (0)
+#endif
+
 CircleDetector::CircleDetector()
 {
 
@@ -320,12 +328,21 @@ int CircleDetector::score(cv::Mat &opt_image, cv::Vec3f& circle, int dilate, int
 bool CircleDetector::detect(cv::Mat &image, int method = CIRCLE_DETECTION_METHOD_HOUGH)
 {
     bool detected = false;
+
 #if (SHOW_FPS)
-    double t = cv::getTickCount();
+    double t0 = cv::getTickCount();
+    double total = 0;
 #endif
+
     cv::Mat opt_image;
-    
+  
     preprocess(image, opt_image);
+
+#if (SHOW_FPS)
+    double t1 = (cv::getTickCount() - t0) / cv::getTickFrequency();
+    total += t1;
+    t0 = cv::getTickCount();
+#endif
 
     std::vector<cv::Vec3f> circles;
     
@@ -339,7 +356,13 @@ bool CircleDetector::detect(cv::Mat &image, int method = CIRCLE_DETECTION_METHOD
         // Use the Hough transform to detect circles
         cv::HoughCircles(opt_image, circles, CV_HOUGH_GRADIENT, 1, opt_image.rows/8, 100, 60, 0, 0);
     }
-    
+
+#if (SHOW_FPS)
+    double t2 = (cv::getTickCount() - t0) / cv::getTickFrequency();
+    total += t2;
+    t0 = cv::getTickCount();
+#endif    
+
     if (circles.size() > 0)
     {
         // Find the inner circle
@@ -351,10 +374,18 @@ bool CircleDetector::detect(cv::Mat &image, int method = CIRCLE_DETECTION_METHOD
         m_inner_score = score(opt_image, circle, -1, 30);
         detected = true;
     }
-#if (SHOW_FPS)    
-    t = (cv::getTickCount() - t) / cv::getTickFrequency();
-    std::cout << "fps: " << (1/t) << std::endl;
-#endif   
+#if (SHOW_FPS)
+    double t3 = (cv::getTickCount() - t0) / cv::getTickFrequency();
+    total += t3;
+    t0 = cv::getTickCount();
+#endif
+
+#if (SHOW_FPS)
+    printfps("preprocess", t1, total);
+    printfps("detection", t2, total);
+    printfps("identify", t3, total);
+#endif
+
     return detected;
 }
 
