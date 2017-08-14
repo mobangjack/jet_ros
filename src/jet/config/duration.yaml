@@ -1,17 +1,17 @@
 # standby: 10
-# grab_bullets: 100
-# request_control: 10
-# takeoff: 250
+# grab_bullets: 50
+# request_control: 5
+# takeoff: 350
 # to normal height: 100
-# fly_to_car: 250
+# fly_to_car: 100
 # find_car: 100
 # serve_car: 100
 # drop_bullets: 100
-# back_to_normal_altitude: 200
-# fly_back: 200
-# find_park: 10
-# visual_servo_landing: 200
-# landing: 200
+# back_to_normal_altitude: 100
+# fly_back: 100
+# find_park: 100
+# visual_servo_landing: 20
+# landing: 220
 # release_control: 10
 
 duration: [10, 50, 5, 350, 100, 100, 100, 100, 100, 100, 100, 100, 20, 220, 10]

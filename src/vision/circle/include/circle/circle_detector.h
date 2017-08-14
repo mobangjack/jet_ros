@@ -20,12 +20,13 @@
 
 class CircleDetector {
 public:
-
-public:
     CircleDetector();
     bool detect(cv::Mat &image);
     void draw(cv::Mat& image);
-
+protected:
+    void preprocess(cv::Mat &bgr_image, cv::Mat &opt_image);
+    void circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &circles, double circle_threshold, int numIterations);
+    int score(cv::Mat &opt_image, cv::Vec3f& circle, int dilate, int samples);
 public:
     cv::Point2f m_center;
     float m_radius;
