@@ -106,7 +106,7 @@ void CircleDetector::preprocess(cv::Mat &bgr_image, cv::Mat &opt_image, int colo
 //		circle_threshold - value between 0 and 1 for the percentage of the circle that needs to vote for it to be accepted
 //		numIterations - the number of RANSAC loops, the function will quit if there is no points left in the set
 //
-void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &circles, double circle_threshold, int numIterations)
+void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &circles, double circle_threshold = 0.9, int numIterations = 2)
 {
 	circles.clear();
 	
@@ -116,7 +116,7 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 	{
 		for(int c = 0; c < opt_image.cols; c++)
 		{
-			if(opt_image.at<unsigned char>(r,c) == 255)
+			if(opt_image.at<uchar>(r,c) == 255)
 			{
 				points.push_back(cv::Point2d(c,r));
 			}
@@ -153,6 +153,8 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 	double b2_AB;
 	double b2_BC;
 
+	double dx; // delta x
+
 	// RANSAC
 	cv::RNG rng; 
 	int min_point_separation = 10; // change to be relative to image size?
@@ -166,33 +168,46 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 	cv::Point2d center;
 	double radius;
 	
+	//#define GG(M) do { std::cout << M << std::endl; } while (0)
 	// Iterate
-	for(int iteration = 0; iteration < numIterations; iteration++) 
+	for(int iteration = 0; iteration < numIterations && points.size() > 0; iteration++) 
 	{
 		//std::cout << "RANSAC iteration: " << iteration << std::endl;
-		
+		//std::cout << "points.size: " << points.size() << std::endl;
 		// get 4 random points
 		pointA = points[rng.uniform((int)0, (int)points.size())];
 		pointB = points[rng.uniform((int)0, (int)points.size())];
 		pointC = points[rng.uniform((int)0, (int)points.size())];
 		pointD = points[rng.uniform((int)0, (int)points.size())];
 		
+		//GG(1);
+
 		// calc lines
-		AB = norm(pointA - pointB);
-		BC = norm(pointB - pointC);
-		CA = norm(pointC - pointA);
-		DC = norm(pointD - pointC);
+		AB = cv::norm(pointA - pointB);
+		BC = cv::norm(pointB - pointC);
+		CA = cv::norm(pointC - pointA);
+		DC = cv::norm(pointD - pointC);
 		
 		// one or more random points are too close together
 		if(AB < min_point_separation || BC < min_point_separation || CA < min_point_separation || DC < min_point_separation) continue;
 		
+		//GG(2);
+
 		//find line equations for AB and BC
 		//AB
-		m_AB = (pointB.y - pointA.y) / (pointB.x - pointA.x + 0.000000001); //avoid divide by 0
+		dx = pointB.x - pointA.x;
+
+		#define MAKE_NOT_ZERO(dx) do { dx = (dx == 0) ? 1e9 : dx; } while (0)
+
+		MAKE_NOT_ZERO(dx); //avoid divide by 0
+
+		m_AB = (pointB.y - pointA.y) / dx;
 		b_AB = pointB.y - m_AB*pointB.x;
 
 		//BC
-		m_BC = (pointC.y - pointB.y) / (pointC.x - pointB.x + 0.000000001); //avoid divide by 0
+		dx = pointC.x - pointB.x;
+		MAKE_NOT_ZERO(dx);
+		m_BC = (pointC.y - pointB.y) / dx; 
 		b_BC = pointC.y - m_BC*pointC.x;
 		
 		
@@ -219,10 +234,15 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 		b2_BC = YmidPoint_BC - m2_BC*XmidPoint_BC;
 		
 		//find intersection = circle center
-		x = (b2_AB - b2_BC) / (m2_BC - m2_AB);
+		dx = m2_BC - m2_AB;
+		MAKE_NOT_ZERO(dx);
+		x = (b2_AB - b2_BC) / dx;
 		y = m2_AB * x + b2_AB;	
 		center = cv::Point2d(x,y);
 		radius = cv::norm(center - pointB);
+
+		//GG(3);
+
 #if (SHOW_IMG)		
 		/// geometry debug image
 		if(true)
@@ -265,7 +285,7 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 		std::vector<int> no_votes;
 		for(int i = 0; i < (int)points.size(); i++) 
 		{
-			double vote_radius = norm(points[i] - center);
+			double vote_radius = cv::norm(points[i] - center);
 			
 			if(abs(vote_radius - radius) < radius_tolerance) 
 			{
@@ -277,6 +297,8 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 			}
 		}
 		
+		//GG(4);
+
 		// check votes vs circle_threshold
 		if( (float)votes.size() / (2.0*CV_PI*radius) >= circle_threshold )
 		{
@@ -313,9 +335,11 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 			points.clear();
 			points = new_points;		
 		}
+
+		//GG(5);
 		
 		// stop RANSAC if there are few points left
-		if((int)points.size() < points_threshold)
+		if(points.size() < points_threshold)
 			break;
 	}
 }
