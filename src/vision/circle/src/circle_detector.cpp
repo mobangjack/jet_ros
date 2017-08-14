@@ -29,31 +29,35 @@ bool CircleDetector::detect(cv::Mat &image)
 
     cv::Mat bgr_image = image.clone();
 
-	cv::medianBlur(bgr_image, bgr_image, 3);
+    cv::medianBlur(bgr_image, bgr_image, 3);
 
-	  // Convert input image to HSV
-	cv::Mat hsv_image;
-	cv::cvtColor(bgr_image, hsv_image, cv::COLOR_BGR2HSV);
+    // Convert input image to HSV
+    cv::Mat hsv_image;
+    cv::cvtColor(bgr_image, hsv_image, cv::COLOR_BGR2HSV);
 
-	  // Threshold the HSV image, keep only the red pixels
+    // Threshold the HSV image, keep only the red pixels
     cv::Mat lower_red_hue_range;
     cv::Mat upper_red_hue_range;
     cv::inRange(hsv_image, cv::Scalar(0, 50, 50), cv::Scalar(10, 255, 255), lower_red_hue_range);
     cv::inRange(hsv_image, cv::Scalar(156, 50, 50), cv::Scalar(180, 255, 255), upper_red_hue_range);
 
-    // Combine the above two images
+    // Combine the above two red hue images
     cv::Mat red_hue_image;
     cv::addWeighted(lower_red_hue_range, 1.0, upper_red_hue_range, 1.0, 0.0, red_hue_image);
 
+    // Threshold the HSV image, keep only the blue pixels
     cv::Mat blue_hue_image;
     cv::inRange(hsv_image, cv::Scalar(100, 50, 50), cv::Scalar(124, 255, 255), blue_hue_image);
 
+    // combine red hue image and blue hue image
     cv::Mat mix_hue_image;
     cv::addWeighted(red_hue_image, 1.0, blue_hue_image, 1.0, 0.0, mix_hue_image);
     
+    // dialate
     cv::Mat dilate_image;
     cv::dilate(mix_hue_image, dilate_image, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(9, 9)), cv::Point(-1, -1), 1);
 
+    // gaussian blur
     cv::Mat blur_image;
     cv::GaussianBlur(mix_hue_image, blur_image, cv::Size(9, 9), 2, 2);
 
