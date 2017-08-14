@@ -5,7 +5,7 @@
 	<include file="$(find dji_sdk)/launch/sdk_manifold.launch"/>
 -->
 
-	<include file="$(find vision)/launch/vision_manifold.launch"/>
+	<include file="$(find vision)/launch/vision_onboard.launch"/>
 
 	<node pkg="jet" type="jet" name="jet" output="screen">
 

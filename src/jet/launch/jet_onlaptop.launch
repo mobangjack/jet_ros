@@ -7,7 +7,7 @@
 <!--
 	<node pkg="jet" type="sdk_odom_to_guidance_odom" name="sdk_odom_to_guidance_odom" output="screen" />
 -->
-	<include file="$(find vision)/launch/vision_laptop.launch"/>
+	<include file="$(find vision)/launch/vision_onlaptop.launch"/>
 
 	<node pkg="jet" type="jet" name="jet" output="screen">
 
