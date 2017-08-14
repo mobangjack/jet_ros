@@ -12,10 +12,6 @@
 		<rosparam command="load" file="$(find vision)/config/marker.yaml" />
 		<rosparam command="load" file="$(find vision)/config/detection_mode.yaml" />
 
-		<param name="camera_x_offset" type="double" value="0.175" />
-		<param name="camera_y_offset" type="double" value="0" />
-		<param name="camera_z_offset" type="double" value="0" />
-
 		<param name="spin_rate" type="int" value="30" />
 		<param name="image_is_rectified" type="bool" value="true"/>
 		<param name="detect_markers_only" type="bool" value="false"/>

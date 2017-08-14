@@ -27,12 +27,12 @@ extrinsic_rotation: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [0, -1, 0, 
-           1, 0, 0, 
-           0, 0, 1]
+   data: [ 1, 0, 0, 
+           0, 1, 0, 
+           0, 0, 1 ]
 # Translation from camera frame to base_link frame
 extrinsic_translation: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [-0.002,-0.006, 0.001]
+   data: [0.175,0.0, 0.0]
