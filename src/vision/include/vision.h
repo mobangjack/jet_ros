@@ -99,8 +99,8 @@ protected:
     bool reload_detmod_param_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
 
 protected:
-    int detection_mode_marker;
-    int detection_mode_circle;
+    std::vector<int> detection_mode_marker;
+    std::vector<int> detection_mode_circle;
     int detection_mode;
     bool draw_result;
     bool draw_markers_cube;
@@ -118,8 +118,11 @@ protected:
     geometry_msgs::PoseStamped target_pose;
 
 protected:
-    bool process_marker();
-    bool process_circle();
+    bool is_marker_detection_mode(int detmod);
+    bool is_circle_detection_mode(int detmod);
+    bool need_capture(int detmod);
+    bool detect_marker();
+    bool detect_circle();
     void publish_detection_mode();
     void publish_target_pose();
     void publish_result_image();

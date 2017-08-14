@@ -1,4 +1,4 @@
 detection_mode: {
-  marker: 7, 
-  circle: 12
+  marker: [6, 7], 
+  circle: [11, 12]
 }
