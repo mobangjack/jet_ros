@@ -150,13 +150,15 @@ bool Vision::process_marker()
     aruco::Marker marker;
     for (int i = 0; i < markers.size() && (!detected); i++)
     {
+        /*
         if (draw_result)
         {
             markers[i].draw(result_image, cv::Scalar(0,0,255), 2);
             if (draw_markers_cube) aruco::CvDrawingUtils::draw3dCube(result_image, markers[i], cam_param);
             if (draw_markers_axis) aruco::CvDrawingUtils::draw3dAxis(result_image, markers[i], cam_param);
         }
-        for (int j = 0; i < marker_id_list.size() && (!detected); j++)
+        */
+        for (int j = 0; j < marker_id_list.size() && (!detected); j++)
         {
             if (markers[i].id == marker_id_list[j])
             {
@@ -169,6 +171,13 @@ bool Vision::process_marker()
 
     if (detected)
     {
+        if (draw_result)
+        {
+            marker.draw(result_image, cv::Scalar(0,0,255), 2);
+            if (draw_markers_cube) aruco::CvDrawingUtils::draw3dCube(result_image, marker, cam_param);
+            if (draw_markers_axis) aruco::CvDrawingUtils::draw3dAxis(result_image, marker, cam_param);
+        }
+
         double t[3];
         double q[4];
 
