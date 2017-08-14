@@ -1,5 +1,6 @@
 circle: {
   inner_radius: 0.45, 
   outer_radius: 0.50,
+  detection_color: 0, # 0 : blue, 1 : red, 2 : aux
   detection_method: 0, # 0 : hough transform, 1 : ransac
 }

@@ -48,10 +48,12 @@ bool Vision::load_circle_param(ros::NodeHandle& nh)
 {
     nh.param<float>("/circle/inner_radius", circle_inner_radius, 0.45);
     nh.param<float>("/circle/outer_radius", circle_outer_radius, 0.50);
+    nh.param<int>("circle/detection_color", circle_detection_color, 0);
     nh.param<int>("circle/detection_method", circle_detection_method, 0);
 
     std::cout << "/vision/circle: {" << "inner_radius: " << circle_inner_radius
-              << ", outer_radius: " << circle_outer_radius << ", detection_method: "
+              << ", outer_radius: " << circle_outer_radius<< ", detection_color: "
+              << circle_detection_color << ", detection_method: "
               << circle_detection_method << "}" << std::endl;
 
     return true;
@@ -300,7 +302,7 @@ bool Vision::detect_marker()
 
 bool Vision::detect_circle()
 {
-    bool detected = circle_detector.detect(in_image, circle_detection_method);
+    bool detected = circle_detector.detect(in_image, circle_detection_color, circle_detection_method);
 
     if (detected && draw_result)
     {

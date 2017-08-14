@@ -32,52 +32,71 @@ CircleDetector::CircleDetector()
 
 }
 
-void CircleDetector::preprocess(cv::Mat &bgr_image, cv::Mat &opt_image)
+void CircleDetector::preprocess(cv::Mat &bgr_image, cv::Mat &opt_image, int color)
 {
-    opt_image = bgr_image.clone();
-
-    // median blur
-    cv::medianBlur(opt_image, opt_image, 3);
-
     // Convert input image to HSV
-    cv::cvtColor(opt_image, opt_image, cv::COLOR_BGR2HSV);
+    cv::cvtColor(bgr_image, opt_image, cv::COLOR_BGR2HSV);
+    if (color == CIRCLE_DETECTION_COLOR_AUX)
+    {
+        // Threshold the HSV image, keep only the red pixels
+        cv::Mat lower_red_hue_image;
+        cv::Mat upper_red_hue_image;
+        cv::inRange(opt_image, cv::Scalar(0, 50, 50), cv::Scalar(10, 255, 255), lower_red_hue_image);
+        cv::inRange(opt_image, cv::Scalar(156, 50, 50), cv::Scalar(180, 255, 255), upper_red_hue_image);
 
-    // Threshold the HSV image, keep only the red pixels
-    cv::Mat lower_red_hue_image;
-    cv::Mat upper_red_hue_image;
-    cv::inRange(opt_image, cv::Scalar(0, 50, 50), cv::Scalar(10, 255, 255), lower_red_hue_image);
-    cv::inRange(opt_image, cv::Scalar(156, 50, 50), cv::Scalar(180, 255, 255), upper_red_hue_image);
+        // Combine the above two red hue images
+        cv::Mat red_hue_image;
+        cv::addWeighted(lower_red_hue_image, 1.0, upper_red_hue_image, 1.0, 0.0, red_hue_image);
 
-    // Combine the above two red hue images
-    cv::Mat red_hue_image;
-    cv::addWeighted(lower_red_hue_image, 1.0, upper_red_hue_image, 1.0, 0.0, red_hue_image);
+        // Threshold the HSV image, keep only the blue pixels
+        cv::Mat blue_hue_image;
+        cv::inRange(opt_image, cv::Scalar(100, 50, 50), cv::Scalar(124, 255, 255), blue_hue_image);
 
-    // Threshold the HSV image, keep only the blue pixels
-    cv::Mat blue_hue_image;
-    cv::inRange(opt_image, cv::Scalar(100, 50, 50), cv::Scalar(124, 255, 255), blue_hue_image);
+        // combine red hue image and blue hue image
+        cv::addWeighted(red_hue_image, 1.0, blue_hue_image, 1.0, 0.0, opt_image);
 
-    // combine red hue image and blue hue image
-    cv::addWeighted(red_hue_image, 1.0, blue_hue_image, 1.0, 0.0, opt_image);
-#if (SHOW_IMG)
-    imshow("lower_red_hue_image", lower_red_hue_image);
-    imshow("upper_red_hue_image", upper_red_hue_image);
-    imshow("red_hue_image", red_hue_image);
-    imshow("blue_hue_image", blue_hue_image);
-    imshow("mix_hue_image", opt_image);
-    waitKey(1);
-#endif   
-    // dialate
-    cv::dilate(opt_image, opt_image, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(9, 9)), cv::Point(-1, -1), 1);
-#if (SHOW_IMG)
-    imshow("dilate_image", opt_image);
-    waitKey(1);
-#endif 
+        #if (SHOW_IMG)
+            imshow("lower_red_hue_image", lower_red_hue_image);
+            imshow("upper_red_hue_image", upper_red_hue_image);
+            imshow("red_hue_image", red_hue_image);
+            imshow("blue_hue_image", blue_hue_image);
+            imshow("opt_image", opt_image);
+            waitKey(1);
+        #endif
+    }
+    else if (color == CIRCLE_DETECTION_COLOR_RED)
+    {
+        // Threshold the HSV image, keep only the red pixels
+        cv::Mat lower_red_hue_image;
+        cv::Mat upper_red_hue_image;
+        cv::inRange(opt_image, cv::Scalar(0, 50, 50), cv::Scalar(10, 255, 255), lower_red_hue_image);
+        cv::inRange(opt_image, cv::Scalar(156, 50, 50), cv::Scalar(180, 255, 255), upper_red_hue_image);
+
+        // Combine the above two red hue images
+        cv::addWeighted(lower_red_hue_image, 1.0, upper_red_hue_image, 1.0, 0.0, opt_image);
+
+        #if (SHOW_IMG)
+            imshow("lower_red_hue_image", lower_red_hue_image);
+            imshow("upper_red_hue_image", upper_red_hue_image);
+            imshow("opt_image", opt_image);
+            waitKey(1);
+        #endif
+    }
+    else
+    {
+        cv::inRange(opt_image, cv::Scalar(100, 50, 50), cv::Scalar(124, 255, 255), opt_image);
+        #if (SHOW_IMG)
+            imshow("opt_image", opt_image);
+            waitKey(1);
+        #endif
+    }
+    
     // gaussian blur
     cv::GaussianBlur(opt_image, opt_image, cv::Size(9, 9), 2, 2);
-#if (SHOW_IMG)
-    imshow("blur_image", opt_image);
-    waitKey(1);
-#endif 
+    #if (SHOW_IMG)
+        imshow("blur_image", opt_image);
+        waitKey(1);
+    #endif 
 }
 
 // circleRANSAC
@@ -325,7 +344,7 @@ int CircleDetector::score(cv::Mat &opt_image, cv::Vec3f& circle, int dilate, int
     return count;
 }
 
-bool CircleDetector::detect(cv::Mat &image, int method = CIRCLE_DETECTION_METHOD_HOUGH)
+bool CircleDetector::detect(cv::Mat &image, int color, int method)
 {
     bool detected = false;
 
@@ -336,7 +355,7 @@ bool CircleDetector::detect(cv::Mat &image, int method = CIRCLE_DETECTION_METHOD
 
     cv::Mat opt_image;
   
-    preprocess(image, opt_image);
+    preprocess(image, opt_image, color);
 
 #if (SHOW_FPS)
     double t1 = (cv::getTickCount() - t0) / cv::getTickFrequency();

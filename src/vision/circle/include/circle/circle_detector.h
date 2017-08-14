@@ -22,15 +22,21 @@ class CircleDetector {
 public:
     typedef enum
     {
+        CIRCLE_DETECTION_COLOR_BLUE = 0,
+        CIRCLE_DETECTION_COLOR_RED = 1,
+        CIRCLE_DETECTION_COLOR_AUX = 2,
+    } CircleDetectionColor_e;
+    typedef enum
+    {
         CIRCLE_DETECTION_METHOD_HOUGH = 0,
         CIRCLE_DETECTION_METHOD_RANSAC = 1,
-    } CircleDetectMethod_e;
+    } CircleDetectionMethod_e;
 
     CircleDetector();
-    bool detect(cv::Mat &image, int method);
+    bool detect(cv::Mat &image, int color = CIRCLE_DETECTION_COLOR_BLUE, int method = CIRCLE_DETECTION_METHOD_HOUGH);
     void draw(cv::Mat& image);
 protected:
-    void preprocess(cv::Mat &bgr_image, cv::Mat &opt_image);
+    void preprocess(cv::Mat &bgr_image, cv::Mat &opt_image, int color = CIRCLE_DETECTION_COLOR_BLUE);
     void circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &circles, double circle_threshold, int numIterations);
     int score(cv::Mat &opt_image, cv::Vec3f& circle, int dilate, int samples);
 public:
