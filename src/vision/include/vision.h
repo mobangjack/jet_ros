@@ -37,6 +37,8 @@
 #include <ar_sys/utils.h>
 #include "circle/circle_detector.h"
 
+#include "param.h"
+
 class Vision
 {
 public:

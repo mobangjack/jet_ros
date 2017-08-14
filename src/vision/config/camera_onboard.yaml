@@ -18,3 +18,15 @@ projection_matrix:
   rows: 3
   cols: 4
   data: [488.5268249511719, 0, 305.0990841060138, 0, 0, 489.0720520019531, 269.8452152812879, 0, 0, 0, 1, 0]
+# Rotation from camera frame to base_link frame
+extrinsic_rotation:
+   rows: 3
+   cols: 3
+   data: [0, -1, 0, 
+           1, 0, 0, 
+           0, 0, 1]
+# Translation from camera frame to base_link frame
+extrinsic_translation:
+   rows: 3
+   cols: 1
+   data: [-0.002,-0.006, 0.001]
