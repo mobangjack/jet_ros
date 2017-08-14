@@ -89,7 +89,7 @@ void CameraParameters::setParams(cv::Mat cameraMatrix,cv::Mat distorsionCoeff,cv
 cv::Point3f CameraParameters::getCameraLocation(cv::Mat Rvec,cv::Mat Tvec)
 {
     cv::Mat m33(3,3,CV_32FC1);
-    cv::Rodrigues(Rvec, m33)  ;
+    cv::Rodrigues(Rvec, m33);
 
     cv::Mat m44=cv::Mat::eye(4,4,CV_32FC1);
     for (int i=0;i<3;i++)

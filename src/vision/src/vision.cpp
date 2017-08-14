@@ -11,11 +11,9 @@ Vision::Vision() : nh("~"), image_transport(nh), cam_info_received(false), detec
     nh.param<bool>("draw_markers_cube", draw_markers_cube, false);
     nh.param<bool>("draw_markers_axis", draw_markers_axis, false);
     nh.param<bool>("detect_markers_only", detect_markers_only, false);
-    nh.param<float>("camera_x_offset", camera_x_offset, 0.175);
-    nh.param<float>("camera_y_offset", camera_y_offset, 0);
-    nh.param<float>("camera_z_offset", camera_z_offset, 0);
 
     // load parameters
+    load_camera_param(nh);
     load_circle_param(nh);
     load_marker_param(nh);
     load_detmod_param(nh);
@@ -34,6 +32,7 @@ Vision::Vision() : nh("~"), image_transport(nh), cam_info_received(false), detec
 
     ROS_INFO("Vision: initilaizing services");
     // initialize service servers
+    reload_camera_param_srv = nh.advertiseService("/vision/reload_camera_param", &Vision::reload_camera_param_callback, this);
     reload_detmod_param_srv = nh.advertiseService("/vision/reload_detmod_param", &Vision::reload_detmod_param_callback, this);
     reload_circle_param_srv = nh.advertiseService("/vision/reload_circle_param", &Vision::reload_circle_param_callback, this);
     reload_marker_param_srv = nh.advertiseService("/vision/reload_marker_param", &Vision::reload_marker_param_callback, this);
@@ -78,6 +77,29 @@ bool Vision::load_marker_param(ros::NodeHandle& nh)
     return true;
 }
 
+bool Vision::load_camera_param(ros::NodeHandle& nh)
+{
+    // camera extrinsic parameters
+    std::string camera_info_url;
+    ros::param::get("/usb_cam/camera_info_url", camera_info_url);
+    std::cout << "Vision: camera_info_url: " << camera_info_url << std::endl;
+    std::string camera_info_path = camera_info_url.substr(7, camera_info_url.length());
+    std::cout << "Vision: camera_info_path: " << camera_info_path << std::endl;
+    cv::FileStorage fs(camera_info_path, cv::FileStorage::READ);
+    if(!fs.isOpened())
+    {
+        std::cerr << "ERROR: Wrong path to settings" << std::endl;
+        fs.release();
+        return false;
+    }
+    fs["extrinsic_rotation"] >> camera_Rmat;
+    fs["extrinsic_translation"] >> camera_Tmat;
+    std::cout << "Extrinsic_R : " << std::endl << camera_Rmat << std::endl;
+    std::cout << "Extrinsic_T : " << std::endl << camera_Tmat << std::endl;
+    fs.release();
+    return true;
+}
+
 bool Vision::load_detmod_param(ros::NodeHandle& nh)
 {
     nh.param<int>("/vision/detection_mode/marker", detection_mode_marker, 6);
@@ -90,6 +112,11 @@ bool Vision::load_detmod_param(ros::NodeHandle& nh)
     std::cout << "}" << std::endl;
 
     return true;
+}
+
+bool Vision::reload_camera_param_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
+{
+    return load_camera_param(nh);
 }
 
 bool Vision::reload_circle_param_callback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
@@ -121,6 +148,21 @@ void Vision::publish_target_pose()
 {
     if(target_pose_pub.getNumSubscribers() > 0)
     {
+        target_pose.pose.position.x = target_Tmat.ptr<float>(0)[0];
+        target_pose.pose.position.y = target_Tmat.ptr<float>(0)[1];
+        target_pose.pose.position.z = target_Tmat.ptr<float>(0)[2];
+
+        Eigen::Matrix3d eigen_R;
+        cv2eigen(target_Rmat, eigen_R);
+        Eigen::Quaterniond q(eigen_R);
+        q.normalize();
+
+        target_pose.pose.orientation.x = q.x();
+        target_pose.pose.orientation.y = q.y();
+        target_pose.pose.orientation.z = q.z();
+        target_pose.pose.orientation.w = q.w();
+
+        target_pose.header.frame_id = "vision_target";
         target_pose.header.stamp = ros::Time::now();
         target_pose_pub.publish(target_pose);
     }
@@ -178,20 +220,23 @@ bool Vision::process_marker()
             if (draw_markers_axis) aruco::CvDrawingUtils::draw3dAxis(result_image, marker, cam_param);
         }
 
-        double t[3];
-        double q[4];
+        cv::Mat R33(3, 3, CV_32FC1);
+        cv::Rodrigues(marker.Rvec, R33);
+        
+        // ROS port
+        for (int i = 1; i < 3; i++)
+        {
+            R33.at<float>(i, i) = -R33.at<float>(i, i); // see @ ar_sys/src/utils.cpp
+        }
 
-        marker.OgreGetPoseParameters(t, q);
-
-        target_pose.header.frame_id = "marker";
-
-        target_pose.pose.position.x = t[1] + camera_x_offset;
-        target_pose.pose.position.y = -t[0] + camera_y_offset;
-        target_pose.pose.position.z = t[2] + camera_z_offset;
-        target_pose.pose.orientation.x = q[0];
-        target_pose.pose.orientation.y = q[1];
-        target_pose.pose.orientation.z = q[2];
-        target_pose.pose.orientation.w = q[3];
+        cv::Mat T31(3, 1, CV_32FC1);
+        for (int i = 0; i < 3; i++)
+        {
+            T31.ptr(0)[i] = marker.Tvec.ptr(0)[i];
+        }
+        
+        target_Rmat = camera_Rmat * R33;
+        target_Tmat = camera_Rmat * T31 + camera_Tmat;
     }
 
     return detected;
@@ -233,11 +278,19 @@ bool Vision::process_circle()
     float focal = (fx + fy) / 2.0;
     float tz = focal * ratio;
 
-    target_pose.header.frame_id = "circle";
-    target_pose.pose.position.x = ty + camera_x_offset;
-    target_pose.pose.position.y = -tx + camera_y_offset;
-    target_pose.pose.position.z = tz + camera_z_offset;
-    target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
+    cv::Mat R33 = cv::Mat::zeros(3, 3, CV_32FC1);
+    for (int i = 0; i < 3; i++)
+    {
+        R33.at<float>(i, i) = 1; // No rotation for circle
+    }
+
+    cv::Mat T31 = cv::Mat::zeros(3, 1, CV_32FC1);
+    T31.at<float>(0, 0) = tx;
+    T31.at<float>(1, 0) = ty;
+    T31.at<float>(2, 0) = tz;
+
+    target_Rmat = camera_Rmat * R33;
+    target_Tmat = camera_Rmat * T31 + camera_Tmat;
 
     return detected;
 }
