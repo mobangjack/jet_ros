@@ -4,8 +4,9 @@
 Vision::Vision() : nh("~"), image_transport(nh), cam_info_received(false), detection_mode(0)
 {
     ROS_INFO("Vision: loading parameters");
+
     // private parameters
-    nh.param<int>("spin_rate", 30);
+    nh.param<int>("spin_rate", spin_rate, 30);
     nh.param<bool>("image_is_rectified", image_is_rectified, true); 
     nh.param<bool>("draw_result", draw_result, false);
     nh.param<bool>("draw_markers_cube", draw_markers_cube, false);
@@ -453,11 +454,12 @@ void Vision::jet_state_callback(const std_msgs::UInt8ConstPtr& jet_state_msg)
 void Vision::spin()
 {
     ros::Rate rate(spin_rate);
+
     while (ros::ok())
     {
         ros::spinOnce();
-
-        broadcast_tf_camera2object();
+        
+        broadcast_tf_baselink2camera();
         
         rate.sleep();
     }

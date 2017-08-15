@@ -81,6 +81,7 @@ protected:
     ros::Publisher target_pose_pub;
     ros::Publisher detection_mode_pub;
     image_transport::Publisher image_pub;
+    
     tf::TransformBroadcaster baselink2camera_tb;
     tf::TransformBroadcaster camera2object_tb;
 
