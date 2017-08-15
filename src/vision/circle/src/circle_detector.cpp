@@ -17,7 +17,7 @@
 #include "circle/circle_detector.h"
 
 #define SHOW_IMG 0
-#define SHOW_FPS 1
+#define SHOW_FPS 0
 
 #if (SHOW_FPS)
 #define printfps(item,t,total) do { \

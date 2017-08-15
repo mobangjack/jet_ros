@@ -1,7 +1,8 @@
 <launch>
+
 	<include file="$(find vision)/launch/camera_onboard.launch"/>
 
-	<arg name="display_result" default="true"/>
+	<arg name="display_result" default="false"/>
 
 	<node pkg="vision" type="vision" name="vision" output="screen">
 	
