@@ -4,6 +4,7 @@ project(vision)
 set(CMAKE_BUILD_TYPE "Release")
 
 find_package(catkin REQUIRED COMPONENTS
+    tf
     cv_bridge
     image_transport
     roscpp

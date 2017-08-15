@@ -100,12 +100,19 @@ bool Vision::load_camera_param(ros::NodeHandle& nh)
         fs.release();
         return false;
     }
-    fs["extrinsic_rotation"] >> camera_Rmat;
-    fs["extrinsic_translation"] >> camera_Tmat;
-    camera_Rmat.convertTo(camera_Rmat, CV_32FC1); // convert to f32 to avoid mat mul error
-    camera_Tmat.convertTo(camera_Tmat, CV_32FC1); // convert to f32 to avoid mat mul error
-    std::cout << "camera_Rmat : " << std::endl << camera_Rmat << std::endl;
-    std::cout << "camera_Tmat : " << std::endl << camera_Tmat << std::endl;
+    fs["extrinsic_rotation"] >> camera_cv_R;
+    fs["extrinsic_translation"] >> camera_cv_T;
+
+    camera_cv_R.convertTo(camera_cv_R, CV_32FC1); // convert to f32 to avoid mat mul error
+    camera_cv_T.convertTo(camera_cv_T, CV_32FC1); // convert to f32 to avoid mat mul error
+
+    cv2eigen(camera_cv_R, camera_eigen_R);
+    Eigen::Quaterniond Q(camera_eigen_R);
+    camera_eigen_Q = Q.normalized();
+
+    std::cout << "camera_cv_R : " << std::endl << camera_cv_R << std::endl;
+    std::cout << "camera_cv_T : " << std::endl << camera_cv_T << std::endl;
+
     fs.release();
     return true;
 }
@@ -172,21 +179,16 @@ void Vision::publish_target_pose()
 {
     if(target_pose_pub.getNumSubscribers() > 0)
     {
-        target_pose.pose.position.x = target_Tmat.ptr<float>(0)[0];
-        target_pose.pose.position.y = target_Tmat.ptr<float>(0)[1];
-        target_pose.pose.position.z = target_Tmat.ptr<float>(0)[2];
+        target_pose.pose.position.x = target_cv_T.ptr<float>(0)[0];
+        target_pose.pose.position.y = target_cv_T.ptr<float>(0)[1];
+        target_pose.pose.position.z = target_cv_T.ptr<float>(0)[2];
 
-        Eigen::Matrix3d eigen_R;
-        cv2eigen(target_Rmat, eigen_R);
-        Eigen::Quaterniond q(eigen_R);
-        q.normalize();
+        target_pose.pose.orientation.x = target_eigen_Q.x();
+        target_pose.pose.orientation.y = target_eigen_Q.y();
+        target_pose.pose.orientation.z = target_eigen_Q.z();
+        target_pose.pose.orientation.w = target_eigen_Q.w();
 
-        target_pose.pose.orientation.x = q.x();
-        target_pose.pose.orientation.y = q.y();
-        target_pose.pose.orientation.z = q.z();
-        target_pose.pose.orientation.w = q.w();
-
-        target_pose.header.frame_id = "vision_target";
+        target_pose.header.frame_id = "object";
         target_pose.header.stamp = ros::Time::now();
         target_pose_pub.publish(target_pose);
     }
@@ -204,6 +206,24 @@ void Vision::publish_result_image()
         out_msg.image = result_image;
         image_pub.publish(out_msg.toImageMsg());
     }
+}
+
+void Vision::broadcast_tf_baselink2camera()
+{
+    tf::Quaternion Rq(camera_eigen_Q.x(), camera_eigen_Q.y(), camera_eigen_Q.z(), camera_eigen_Q.w());
+    tf::Vector3 Tv(camera_cv_T.at<float>(0, 0), camera_cv_T.at<float>(1, 0), camera_cv_T.at<float>(2, 0));
+    tf::Transform transform(Rq, Tv);
+    tf::StampedTransform stampedTransform(transform, ros::Time::now(), "base_link", "camera");
+    baselink2camera_tb.sendTransform(stampedTransform);
+}
+
+void Vision::broadcast_tf_camera2object()
+{
+    tf::Quaternion Rq(target_eigen_Q.x(), target_eigen_Q.y(), target_eigen_Q.z(), target_eigen_Q.w());
+    tf::Vector3 Tv(target_cv_T.at<float>(0, 0), target_cv_T.at<float>(1, 0), target_cv_T.at<float>(2, 0));
+    tf::Transform transform(Rq, Tv);
+    tf::StampedTransform stampedTransform(transform, ros::Time::now(), "camera", "object");
+    camera2object_tb.sendTransform(stampedTransform);
 }
 
 bool Vision::is_marker_detection_mode(int detmod)
@@ -293,8 +313,8 @@ bool Vision::detect_marker()
         // std::cout << "R: " << Rvec << std::endl;
         // std::cout << "T: " << Tvec << std::endl;
         
-        target_Rmat = camera_Rmat * R33;
-        target_Tmat = camera_Rmat * Tvec + camera_Tmat;
+        target_cv_R = camera_cv_R * R33;
+        target_cv_T = camera_cv_R * Tvec + camera_cv_T;
     }
 
     return detected;
@@ -342,8 +362,8 @@ bool Vision::detect_circle()
     T31.at<float>(2, 0) =  tz;
 
     // No rotation for circle
-    target_Rmat = cv::Mat::eye(3, 3, CV_32FC1);
-    target_Tmat = camera_Rmat * T31 + camera_Tmat;
+    target_cv_R = cv::Mat::eye(3, 3, CV_32FC1);
+    target_cv_T = camera_cv_R * T31 + camera_cv_T;
 
     return detected;
 }
@@ -373,6 +393,12 @@ void Vision::image_callback(const sensor_msgs::ImageConstPtr& msg)
         }
         if (detected)
         {
+            cv2eigen(target_cv_R, target_eigen_R);
+            Eigen::Quaterniond Q(target_eigen_R);
+            target_eigen_Q = Q.normalized();
+
+            broadcast_tf_camera2object();
+
             publish_target_pose();
         }
         if (draw_result)
@@ -426,10 +452,13 @@ void Vision::jet_state_callback(const std_msgs::UInt8ConstPtr& jet_state_msg)
 
 void Vision::spin()
 {
-    ros::Rate rate(30);
+    ros::Rate rate(spin_rate);
     while (ros::ok())
     {
         ros::spinOnce();
+
+        broadcast_tf_camera2object();
+        
         rate.sleep();
     }
 }

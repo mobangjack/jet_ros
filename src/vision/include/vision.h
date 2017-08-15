@@ -48,7 +48,9 @@ public:
 
 protected:
     // camera parameters
-    cv::Mat camera_Rmat, camera_Tmat;
+    cv::Mat camera_cv_R, camera_cv_T;
+    Eigen::Matrix3d camera_eigen_R;
+    Eigen::Quaterniond camera_eigen_Q;
     aruco::CameraParameters cam_param;
 
     // marker configuration
@@ -79,6 +81,8 @@ protected:
     ros::Publisher target_pose_pub;
     ros::Publisher detection_mode_pub;
     image_transport::Publisher image_pub;
+    tf::TransformBroadcaster baselink2camera_tb;
+    tf::TransformBroadcaster camera2object_tb;
 
     // service servers
     ros::ServiceServer reload_camera_param_srv;
@@ -114,7 +118,9 @@ protected:
     int spin_rate;
 
     cv::Mat in_image, result_image;
-    cv::Mat target_Rvec, target_Rmat, target_Tmat;
+    cv::Mat target_cv_R, target_cv_T;
+    Eigen::Matrix3d target_eigen_R;
+    Eigen::Quaterniond target_eigen_Q;
 
     // target pose message to publish
     geometry_msgs::PoseStamped target_pose;
@@ -128,6 +134,8 @@ protected:
     void publish_detection_mode();
     void publish_target_pose();
     void publish_result_image();
+    void broadcast_tf_baselink2camera();
+    void broadcast_tf_camera2object();
 
 protected:
     bool load_camera_param(ros::NodeHandle& nh);
