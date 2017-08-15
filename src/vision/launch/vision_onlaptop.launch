@@ -2,7 +2,7 @@
 
 	<include file="$(find vision)/launch/camera_onlaptop.launch"/>
 
-	<arg name="display_result" default="false"/>
+	<arg name="display_result" default="true"/>
 
 	<node pkg="vision" type="vision" name="vision" output="screen">
 	

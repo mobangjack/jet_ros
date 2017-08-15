@@ -56,12 +56,12 @@ void CircleDetector::preprocess(cv::Mat &bgr_image, cv::Mat &opt_image, int colo
         cv::addWeighted(red_hue_image, 1.0, blue_hue_image, 1.0, 0.0, opt_image);
 
         #if (SHOW_IMG)
-            imshow("lower_red_hue_image", lower_red_hue_image);
-            imshow("upper_red_hue_image", upper_red_hue_image);
-            imshow("red_hue_image", red_hue_image);
-            imshow("blue_hue_image", blue_hue_image);
-            imshow("opt_image", opt_image);
-            waitKey(1);
+            cv::imshow("lower_red_hue_image", lower_red_hue_image);
+            cv::imshow("upper_red_hue_image", upper_red_hue_image);
+            cv::imshow("red_hue_image", red_hue_image);
+            cv::imshow("blue_hue_image", blue_hue_image);
+            cv::imshow("aux_hue_image", opt_image);
+            cv::waitKey(1);
         #endif
     }
     else if (color == CIRCLE_DETECTION_COLOR_RED)
@@ -76,26 +76,26 @@ void CircleDetector::preprocess(cv::Mat &bgr_image, cv::Mat &opt_image, int colo
         cv::addWeighted(lower_red_hue_image, 1.0, upper_red_hue_image, 1.0, 0.0, opt_image);
 
         #if (SHOW_IMG)
-            imshow("lower_red_hue_image", lower_red_hue_image);
-            imshow("upper_red_hue_image", upper_red_hue_image);
-            imshow("opt_image", opt_image);
-            waitKey(1);
+            cv::imshow("lower_red_hue_image", lower_red_hue_image);
+            cv::imshow("upper_red_hue_image", upper_red_hue_image);
+            cv::imshow("red_hue_image", opt_image);
+            cv::waitKey(1);
         #endif
     }
     else
     {
         cv::inRange(opt_image, cv::Scalar(100, 50, 50), cv::Scalar(124, 255, 255), opt_image);
         #if (SHOW_IMG)
-            imshow("opt_image", opt_image);
-            waitKey(1);
+            cv::imshow("blue_hue_image", opt_image);
+            cv::waitKey(1);
         #endif
     }
     
     // gaussian blur
     cv::GaussianBlur(opt_image, opt_image, cv::Size(9, 9), 2, 2);
     #if (SHOW_IMG)
-        imshow("blur_image", opt_image);
-        waitKey(1);
+        cv::imshow("blur_image", bgr_image);
+        cv::waitKey(1);
     #endif 
 }
 
@@ -247,34 +247,34 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 		/// geometry debug image
 		if(true)
 		{
-			Mat debug_image = blur_image.clone();
-			cvtColor(debug_image, debug_image, CV_GRAY2RGB);
-		
-			Scalar pink(255,0,255);
-			Scalar blue(255,0,0);
-			Scalar green(0,255,0);
-			Scalar yellow(0,255,255);
-			Scalar red(0,0,255);
-		
+			cv::Mat debug_image = opt_image.clone();
+			cv::cvtColor(debug_image, debug_image, CV_GRAY2RGB);
+
+			cv::Scalar pink(255,0,255);
+			cv::Scalar blue(255,0,0);
+			cv::Scalar green(0,255,0);
+			cv::Scalar yellow(0,255,255);
+			cv::Scalar red(0,0,255);
+
 			// the 3 points from which the circle is calculated in pink
-			circle(debug_image, pointA, 3, pink);
-			circle(debug_image, pointB, 3, pink);
-			circle(debug_image, pointC, 3, pink);
+			cv::circle(debug_image, pointA, 3, pink);
+			cv::circle(debug_image, pointB, 3, pink);
+			cv::circle(debug_image, pointC, 3, pink);
 		
 			// the 2 lines (blue) and the perpendicular bisectors (green)
-			line(debug_image,pointA,pointB,blue);
-			line(debug_image,pointB,pointC,blue);
-			line(debug_image,Point(XmidPoint_AB,YmidPoint_AB),center,green);
-			line(debug_image,Point(XmidPoint_BC,YmidPoint_BC),center,green);
+			cv::line(debug_image,pointA,pointB,blue);
+			cv::line(debug_image,pointB,pointC,blue);
+			cv::line(debug_image,cv::Point(XmidPoint_AB,YmidPoint_AB),center,green);
+			cv::line(debug_image,cv::Point(XmidPoint_BC,YmidPoint_BC),center,green);
 		
-			circle(debug_image, center, 3, yellow); // center
-			circle(debug_image, center, radius, yellow);// circle
+			cv::circle(debug_image, center, 3, yellow); // center
+			cv::circle(debug_image, center, radius, yellow);// circle
 		
 			// 4th point check
-			circle(debug_image, pointD, 3, red);
+			cv::circle(debug_image, pointD, 3, red);
 		
-			imshow("ransac debug", debug_image);
-			waitKey(1);
+			cv::imshow("ransac debug", debug_image);
+			cv::waitKey(1);
 		}
 #endif		
 		//check if the 4 point is on the circle
@@ -307,23 +307,23 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 			// voting debug image
 			if(true)
 			{
-				Mat debug_image2 = blur_image.clone();
-				cvtColor(debug_image2, debug_image2, CV_GRAY2RGB);
+				cv::Mat debug_image2 = opt_image.clone();
+				cv::cvtColor(debug_image2, debug_image2, CV_GRAY2RGB);
 		
-				Scalar yellow(0,255,255);
-				Scalar green(0,255,0);
+				cv::Scalar yellow(0,255,255);
+				cv::Scalar green(0,255,0);
 			
-				circle(debug_image2, center, 3, yellow); // center
-				circle(debug_image2, center, radius, yellow);// circle
+				cv::circle(debug_image2, center, 3, yellow); // center
+				cv::circle(debug_image2, center, radius, yellow);// circle
 			
 				// draw points that voted
 				for(int i = 0; i < (int)votes.size(); i++)
 				{
-					circle(debug_image2, points[votes[i]], 1, green);
+					cv::circle(debug_image2, points[votes[i]], 1, green);
 				}
 			
-				imshow("ransac debug", debug_image2);
-				waitKey(1);
+				cv::imshow("ransac debug", debug_image2);
+				cv::waitKey(1);
 			}
 #endif			
 			// remove points from the set so they can't vote on multiple circles
@@ -414,7 +414,7 @@ bool CircleDetector::detect(cv::Mat &image, int color, int method)
         m_center.x = circle[0];
         m_center.y = circle[1];
         m_radius = circle[2];
-        m_inner_score = score(opt_image, circle, -1, 30);
+        m_score = score(opt_image, circle, -1, 30);
         detected = true;
     }
 #if (SHOW_FPS)

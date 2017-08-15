@@ -330,7 +330,7 @@ bool Vision::detect_circle()
         circle_detector.draw(result_image);
     }
 
-    if ((!detected) || (circle_detector.m_inner_score == 0))
+    if ((!detected) || (circle_detector.m_score == 0))
     {
         detected = false;
         return false;
@@ -343,7 +343,7 @@ bool Vision::detect_circle()
     float cx = cam_param.CameraMatrix.at<float>(0, 2);
     float cy = cam_param.CameraMatrix.at<float>(1, 2);
 
-    float circle_radius = circle_detector.m_inner_score > 0 ? circle_inner_radius : circle_outer_radius;
+    float circle_radius = circle_detector.m_score < 0 ? circle_inner_radius : circle_outer_radius;
     float circle_pixel_radius = circle_detector.m_radius;
 
     float ratio = circle_radius / circle_pixel_radius;
@@ -371,7 +371,6 @@ bool Vision::detect_circle()
 
 void Vision::image_callback(const sensor_msgs::ImageConstPtr& msg)
 {
-    // std::cout << "vision::image_callback is called" << std::endl;
     if (!cam_info_received) {
         ROS_WARN("No camera info received, image callback will do nothing but return");
         return;
@@ -380,8 +379,8 @@ void Vision::image_callback(const sensor_msgs::ImageConstPtr& msg)
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGB8);
-        in_image = cv_ptr->image;
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGB8); // caution: RGB, not BGR
+        cv::cvtColor(cv_ptr->image, in_image, cv::COLOR_RGB2BGR); // CONVERT rgb to bgr for opencv adaption
         result_image = cv_ptr->image.clone();
 
         if (is_marker_detection_mode(detection_mode))

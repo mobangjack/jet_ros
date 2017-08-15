@@ -42,5 +42,5 @@ protected:
 public:
     cv::Point2f m_center;
     float m_radius;
-    int m_inner_score;
+    int m_score;
 };
