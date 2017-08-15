@@ -392,7 +392,7 @@ bool CircleDetector::detect(cv::Mat &image, int color, int method)
     if (method == CIRCLE_DETECTION_METHOD_RANSAC)
     {
         // Use RANSAC to detect circles
-        circleRANSAC(opt_image, circles, 0.99, 1);
+        circleRANSAC(opt_image, circles, 0.99, 10);
     }
     else
     {
