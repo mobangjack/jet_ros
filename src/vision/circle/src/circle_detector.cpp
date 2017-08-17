@@ -197,7 +197,7 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 		//AB
 		dx = pointB.x - pointA.x;
 
-		#define MAKE_NOT_ZERO(dx) do { dx = (dx == 0) ? 1e9 : dx; } while (0)
+		#define MAKE_NOT_ZERO(dx) do { dx = (dx == 0) ? 1e-9 : dx; } while (0)
 
 		MAKE_NOT_ZERO(dx); //avoid divide by 0
 
