@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(OpenCV REQUIRED)
 #find_package(OpenMP REQUIRED)
-find_package(Eigen REQUIRED)
+#find_package(Eigen REQUIRED)
 
 #FIND_PACKAGE(OpenMP REQUIRED)
 #if(OPENMP_FOUND)
@@ -43,8 +43,7 @@ find_package(Eigen REQUIRED)
 catkin_package(
     INCLUDE_DIRS include
     LIBRARIES apriltags
-    DEPENDS Eigen
-    DEPENDS OpenMP
+#    DEPENDS Eigen
 )
 
 include_directories(
@@ -75,11 +74,11 @@ target_link_libraries(aruco
   ${catkin_LIBRARIES}
 )
 
-add_library(ar_sys
+add_library(ar_sys_utils
     ar_sys/src/utils.cpp
 )
 
-target_link_libraries(ar_sys
+target_link_libraries(ar_sys_utils
   ${Eigen_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${catkin_LIBRARIES}
@@ -93,17 +92,25 @@ target_link_libraries(circle_detector
   ${OpenCV_LIBRARIES}
 )
 
+add_executable(circle_detector_test
+    circle/src/circle_detector_test.cpp
+)
+
+target_link_libraries(circle_detector_test
+    ${OpenCV_LIBRARIES} 
+    circle_detector
+)
+
 add_executable(vision
     src/vision.cpp
 )
 
-add_dependencies(vision vision_generate_messages_cpp)
+# add_dependencies(vision vision_generate_messages_cpp)
 
 target_link_libraries(vision 
     ${catkin_LIBRARIES}  
     ${OpenCV_LIBRARIES} 
     aruco
-    ar_sys
+    ar_sys_utils
     circle_detector
 )
-

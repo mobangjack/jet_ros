@@ -106,7 +106,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES dji_sdk_dji2mav
   CATKIN_DEPENDS dji_sdk geometry_msgs roscpp rospy std_msgs
-  DEPENDS system_lib
+#  DEPENDS system_lib
 )
 
 ###########

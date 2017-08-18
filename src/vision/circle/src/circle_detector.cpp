@@ -212,7 +212,7 @@ void CircleDetector::circleRANSAC(cv::Mat &opt_image, std::vector<cv::Vec3f> &ci
 		
 		
 		//test colinearity (ie the points are not all on the same line)
-		if(abs(pointC.y - (m_AB*pointC.x + b_AB + colinear_tolerance)) < colinear_tolerance) continue;
+		if(abs(pointC.y - (m_AB*pointC.x + b_AB)) < colinear_tolerance) continue;
 		
 		//find perpendicular bisector
 		//AB
